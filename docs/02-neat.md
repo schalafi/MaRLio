@@ -127,6 +127,26 @@ and saves to `runs/neat/`: the whole population (`population.json`, use
 best (`gen_NNN_best.json`) and a `log.csv` of the numbers above. Training
 stops when a genome clears the level.
 
+## Result: World 1-1 cleared in generation 67
+
+With the default settings (population 300, seed 0) a network reached the flag
+in **generation 67**, after about 40 minutes on 4 CPU cores. Watch it:
+
+```bash
+python scripts/play_neat.py trained/neat-1-1.json
+```
+
+![Furthest point reached by the best network in each generation](images/neat-progress.png)
+
+Progress comes in jumps: a new mutation lets Mario get past one more obstacle
+(a pipe, a gap, a group of goombas), then the population spends generations
+refining it before the next jump. The best x sometimes dips a little while
+fitness still rises, because fitness also rewards getting there faster.
+
+The winning network is small: 116 enabled connections and 16 hidden
+neurons, out of 169 grid inputs and 6 buttons. `trained/neat-1-1-log.csv` has
+the per-generation numbers; `scripts/plot_neat_progress.py` draws the chart.
+
 ## Where this differs from MarI/O
 
 * Python, and it runs headless and in parallel instead of in an emulator's
