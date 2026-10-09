@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.colors import ListedColormap  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
-from marrlio.env import make_marios_env  # noqa: E402
-from marrlio.inputs import BOX_RADIUS, ENEMY, TILE_SIZE, mario_position  # noqa: E402
+from marlio.env import make_marios_env  # noqa: E402
+from marlio.inputs import BOX_RADIUS, ENEMY, TILE_SIZE, mario_position  # noqa: E402
 
 #          A  B  up down left right
 RUN_RIGHT = [0, 0, 0, 0, 0, 1]

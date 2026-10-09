@@ -18,8 +18,8 @@ import numpy as np
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
 
-from marrlio.controller import ButtonController
-from marrlio.inputs import GRID_SIZE, input_grid
+from marlio.controller import ButtonController
+from marlio.inputs import GRID_SIZE, input_grid
 
 # World 1, stage 1, the level MarI/O learned to beat.
 DEFAULT_LEVEL = "SuperMarioBros-1-1-v0"

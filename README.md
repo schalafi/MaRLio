@@ -1,4 +1,4 @@
-# MarRLio
+# MaRLio
 
 Super Mario Bros. solved by learning algorithms, shown interactively.
 
@@ -37,7 +37,7 @@ On Linux you may also need `sudo apt-get install libgl1 libglu1-mesa`.
 ## What's here
 
 ```
-marrlio/
+marlio/
   env.py          make_env() for pixel-based RL, make_marios_env() for MarI/O
   inputs.py       MarI/O's 13x13 input grid, read from the game's memory
   controller.py   MarI/O's 6-button controller
@@ -53,7 +53,7 @@ docs/
 tests/
 ```
 
-To add an algorithm, put it in `marrlio/agents/` as a subclass of `Agent`
+To add an algorithm, put it in `marlio/agents/` as a subclass of `Agent`
 (one method: `act(observation) -> action`), and pick the environment that
 matches what it needs to see.
 

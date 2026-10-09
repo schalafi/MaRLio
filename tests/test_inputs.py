@@ -1,6 +1,6 @@
 import numpy as np
 
-from marrlio.inputs import (
+from marlio.inputs import (
     BOX_RADIUS,
     ENEMY,
     ENEMY_ACTIVE,
@@ -55,7 +55,7 @@ def test_enemy_next_to_mario():
 
 
 def test_real_level_start_has_ground_and_no_enemies():
-    from marrlio.env import make_marios_env
+    from marlio.env import make_marios_env
 
     env = make_marios_env()
     grid, _ = env.reset(seed=0)

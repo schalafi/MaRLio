@@ -77,7 +77,7 @@ networks are good at extracting that structure by themselves, at the cost of
 millions of frames of training. Having both observations in this repo lets us
 compare the two approaches later.
 
-### How the grid is built (`marrlio/inputs.py`)
+### How the grid is built (`marlio/inputs.py`)
 
 The code is a line-by-line port of the Super Mario Bros. part of
 [SethBling's MarI/O script](https://gist.github.com/SethBling/598639f8d5e8afb5453a0b9519be51ff):
@@ -126,7 +126,7 @@ frame 100  x=300
 . . . . . . . . . . . . .
 ```
 
-## 3. How MarI/O presses buttons (`marrlio/controller.py`)
+## 3. How MarI/O presses buttons (`marlio/controller.py`)
 
 The network has one output per button: **A** (jump), **B** (run), **up**,
 **down**, **left** and **right**. Each output above zero means "hold this
@@ -137,7 +137,7 @@ both, as in MarI/O.
 `ButtonController` wraps the environment so its action is a list of six
 0/1 values, e.g. `[1, 1, 0, 0, 0, 1]` = jump + run + right.
 
-## 4. Putting it together (`marrlio/env.py`)
+## 4. Putting it together (`marlio/env.py`)
 
 | function | observation | actions | for |
 |----------|-------------|---------|-----|
@@ -145,7 +145,7 @@ both, as in MarI/O.
 | `make_marios_env()` | 13 x 13 input grid | 6 independent buttons | NEAT (MarI/O) |
 
 ```python
-from marrlio.env import make_marios_env
+from marlio.env import make_marios_env
 
 env = make_marios_env(render_mode="human")
 grid, info = env.reset()

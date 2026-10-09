@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "marrlio"
+name = "marlio"
 version = "0.1.0"
 description = "Super Mario Bros. solved by learning algorithms, starting with a Python MarI/O"
 readme = "README.md"
@@ -19,4 +19,4 @@ dependencies = [
 dev = ["pytest", "matplotlib"]
 
 [tool.setuptools.packages.find]
-include = ["marrlio*"]
+include = ["marlio*"]

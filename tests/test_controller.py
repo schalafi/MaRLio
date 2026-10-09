@@ -1,6 +1,6 @@
 import numpy as np
 
-from marrlio.controller import BUTTON_BITS, buttons_to_byte
+from marlio.controller import BUTTON_BITS, buttons_to_byte
 
 
 def test_single_buttons():
@@ -21,7 +21,7 @@ def test_accepts_numpy_actions():
 
 
 def test_marios_env_runs():
-    from marrlio.env import make_marios_env
+    from marlio.env import make_marios_env
 
     env = make_marios_env()
     env.reset(seed=0)

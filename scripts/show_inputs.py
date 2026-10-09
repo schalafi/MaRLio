@@ -13,8 +13,8 @@ Use ``--no-render`` to only print the grid (works without a display).
 import argparse
 import random
 
-from marrlio.env import DEFAULT_LEVEL, make_marios_env
-from marrlio.inputs import grid_to_text
+from marlio.env import DEFAULT_LEVEL, make_marios_env
+from marlio.inputs import grid_to_text
 
 #          A  B  up down left right
 RUN_RIGHT = [0, 1, 0, 0, 0, 1]
