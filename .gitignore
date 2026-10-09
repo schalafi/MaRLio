@@ -1,0 +1,6 @@
+*.egg-info/
+*.nes
+.pytest_cache/
+.venv/
+__pycache__/
+venv/

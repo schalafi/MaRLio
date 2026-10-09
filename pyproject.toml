@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "marlio"
+version = "0.1.0"
+description = "Super Mario Bros. solved by learning algorithms, starting with a Python MarI/O"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gym-super-mario-bros>=9.1.0",
+    "nes-py>=9.0.1",
+    "gymnasium>=1.0.0",
+    "numpy",
+]
+
+[dependency-groups]
+dev = ["pytest", "matplotlib"]
+
+[tool.setuptools.packages.find]
+include = ["marlio*"]

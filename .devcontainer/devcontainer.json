@@ -1,0 +1,35 @@
+{
+  "name": "MaRLio",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    // A lightweight Linux desktop you open in the browser (noVNC), so game
+    // windows from render_mode="human" have somewhere to appear.
+    "ghcr.io/devcontainers/features/desktop-lite:1": {}
+  },
+  "forwardPorts": [6080],
+  "portsAttributes": {
+    "6080": {
+      "label": "Desktop (game window)",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  // Put uv and the project's .venv first on PATH, so `python` in a terminal
+  // is the project's environment with everything installed.
+  "remoteEnv": {
+    "PATH": "${containerWorkspaceFolder}/.venv/bin:/home/vscode/.local/bin:${containerEnv:PATH}"
+  },
+  "hostRequirements": {
+    "cpus": 4
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python"
+      }
+    }
+  }
+}
