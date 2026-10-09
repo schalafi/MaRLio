@@ -48,12 +48,16 @@ marlio/
   agents/         one module per algorithm, all sharing the Agent interface
     base.py
     random_agent.py
+    neat/           MarI/O's NEAT: genomes, species, network, fitness
 scripts/
   random_agent.py       watch random play
   show_inputs.py        watch the game and the grid the network sees
   make_input_figure.py  regenerate the figure in docs/
+  train_neat.py         evolve networks until one clears World 1-1
+  play_neat.py          watch a trained network play
 docs/
   01-environment-and-inputs.md   step 1 explained
+  02-neat.md                     step 2 explained
 tests/
 ```
 
@@ -64,6 +68,14 @@ matches what it needs to see.
 ## Docs
 
 1. [The environment and what the agent sees](docs/01-environment-and-inputs.md)
+2. [Evolving a network with NEAT](docs/02-neat.md)
+
+## Train MarI/O
+
+```bash
+python scripts/train_neat.py --watch              # watch each generation's best in the desktop tab
+python scripts/play_neat.py runs/neat/best.json   # replay the best network
+```
 
 ## Tests
 
