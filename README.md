@@ -12,8 +12,10 @@ other algorithms (PPO, DQN, ...) can be added and compared on the same game.
 
 ## Run it in GitHub Codespaces
 
-1. On GitHub, click **Code → Codespaces → Create codespace**. Setup installs
-   everything (takes a few minutes the first time).
+1. On GitHub, click **Code → Codespaces → Create codespace**. Setup uses
+   [uv](https://docs.astral.sh/uv/) to create `.venv` with everything
+   installed (takes a few minutes the first time). The terminal's `python`
+   is that environment.
 2. Open the **Ports** tab, find **Desktop (game window)** (port 6080) and
    click the globe icon to open it in a browser tab. Click **Connect**; the
    password is `vscode`.
@@ -27,11 +29,11 @@ other algorithms (PPO, DQN, ...) can be added and compared on the same game.
 
 ## Run it locally
 
-Needs Python 3.13+.
+Needs Python 3.13+ and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
-pip install -e ".[dev]"
-python scripts/random_agent.py
+uv sync                                  # creates .venv from uv.lock
+uv run python scripts/random_agent.py
 ```
 
 On Linux you may also need `sudo apt-get install libgl1 libglu1-mesa`.
@@ -66,5 +68,5 @@ matches what it needs to see.
 ## Tests
 
 ```bash
-pytest
+uv run pytest
 ```

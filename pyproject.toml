@@ -15,7 +15,7 @@ dependencies = [
     "numpy",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pytest", "matplotlib"]
 
 [tool.setuptools.packages.find]

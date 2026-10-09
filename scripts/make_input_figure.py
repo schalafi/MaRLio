@@ -4,7 +4,7 @@
 
 Runs Mario right until an enemy enters the grid, then saves a picture of the
 screen (with the area the grid covers outlined) beside the grid itself.
-Needs matplotlib (``pip install -e ".[dev]"``); no display required.
+Needs matplotlib (installed by ``uv sync``); no display required.
 """
 
 import argparse
