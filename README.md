@@ -2,6 +2,8 @@
 
 Super Mario Bros. solved by learning algorithms, shown interactively.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/schalafi/MaRLio)
+
 The first milestone is a Python version of SethBling's
 [MarI/O](https://gist.github.com/SethBling/598639f8d5e8afb5453a0b9519be51ff),
 which uses NEAT ([Stanley & Miikkulainen, 2002](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf))
