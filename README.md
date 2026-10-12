@@ -75,6 +75,8 @@ matches what it needs to see.
 
 ## Train MarI/O
 
+All options are in [marlio/agents/neat/README.md](marlio/agents/neat/README.md).
+
 ```bash
 python scripts/train_neat.py --watch              # watch each generation's best in the desktop tab
 python scripts/play_neat.py runs/neat/best.json   # replay the best network
