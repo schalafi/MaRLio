@@ -12,6 +12,13 @@ generation. Saved in ``--out`` after every generation:
 * ``best.json``        the best genome so far (watch it with play_neat.py)
 * ``gen_NNN_best.json`` the best genome of each generation
 * ``log.csv``          one row of statistics per generation
+* ``practice.json``    the buttons that lead to the practice start, if any
+
+Practice starts (``--practice-from best.json --practice-x 1700``): when
+training stalls at a hard spot, every genome also plays a second run that
+starts just before it, and its fitness is the sum of both runs. The practice
+start is where ``--practice-from``'s genome first reaches x = ``--practice-x``.
+The level still only counts as cleared from the real start.
 """
 
 import argparse
@@ -20,7 +27,7 @@ import json
 import time
 from pathlib import Path
 
-from marlio.agents.neat import N_INPUTS, N_OUTPUTS, Evaluator, NEATConfig, Population, run_genome
+from marlio.agents.neat import N_INPUTS, N_OUTPUTS, Evaluator, Genome, NEATConfig, Population, run_genome
 from marlio.env import DEFAULT_LEVEL, make_marios_env
 
 
@@ -35,7 +42,11 @@ def main():
     parser.add_argument("--resume", help="population.json to continue from")
     parser.add_argument("--watch", action="store_true", help="show each generation's best in a window")
     parser.add_argument("--keep-going", action="store_true", help="don't stop when the level is cleared")
+    parser.add_argument("--practice-from", help="genome whose run sets the practice start")
+    parser.add_argument("--practice-x", type=int, default=None, help="x position of the practice start")
     args = parser.parse_args()
+    if bool(args.practice_from) != (args.practice_x is not None):
+        parser.error("--practice-from and --practice-x go together")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -45,7 +56,20 @@ def main():
     else:
         population = Population(N_INPUTS, N_OUTPUTS, NEATConfig(population=args.population), seed=args.seed)
 
-    evaluator = Evaluator(args.level, args.workers)
+    practice = None
+    if args.practice_from:
+        practice = _buttons_to(args.level, args.practice_from, args.practice_x)
+        (out / "practice.json").write_text(json.dumps(
+            {"from": args.practice_from, "x": args.practice_x, "buttons": practice}))
+        print(f"Practice start at x={args.practice_x} ({len(practice)} frames in)")
+        # Every genome is scored afresh, the same way (both runs).
+        for genome in population.genomes():
+            genome.fitness = 0
+        population.max_fitness = 0.0
+        for species in population.species:
+            species.top_fitness, species.staleness = 0.0, 0
+
+    evaluator = Evaluator(args.level, args.workers, practice)
     watch_env = make_marios_env(args.level, render_mode="human") if args.watch else None
     log_path = out / "log.csv"
     new_log = not log_path.exists() or not args.resume
@@ -78,6 +102,8 @@ def main():
             print(f"gen {population.generation:3d} | species {len(population.species):3d} | "
                   f"best fitness {best.fitness:7.1f} (x={best_result.rightmost:4d}) | "
                   f"mean {mean:6.1f} | {len(todo)} runs in {seconds:5.1f}s"
+                  + (f" | practice best x={max(r.practice.rightmost for r in results.values())}"
+                     if practice else "")
                   + ("  << LEVEL CLEARED" if cleared else ""))
             log.writerow([population.generation, len(population.species), len(todo),
                           round(best.fitness, 1), best_result.rightmost, round(mean, 1),
@@ -104,6 +130,25 @@ def main():
         log_file.close()
         if watch_env is not None:
             watch_env.close()
+
+
+def _buttons_to(level: str, genome_path: str, x: int) -> list[list[int]]:
+    """The buttons the genome presses, frame by frame, until Mario first reaches ``x``."""
+    genome = Genome.from_dict(json.loads(Path(genome_path).read_text()))
+    env = make_marios_env(level)
+    buttons, reached = [], []
+
+    def on_frame(agent, info):
+        if not reached:
+            buttons.append(list(agent.buttons))
+            if info["x_pos"] >= x:
+                reached.append(True)
+
+    run_genome(env, genome, on_frame=on_frame)
+    env.close()
+    if not reached:
+        raise SystemExit(f"{genome_path} never reaches x={x}")
+    return buttons
 
 
 def _genome_json(genome) -> str:
