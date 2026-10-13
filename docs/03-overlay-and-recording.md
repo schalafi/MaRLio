@@ -105,6 +105,41 @@ plus a 3 s outro) and about 8 MB at 768 x 720.
 | `--no-overlay` | off | Shows or records the plain game. |
 | `--outro` | 3 | Seconds to keep the game running after the flag (no buttons pressed), so the video ends with Mario sliding down the pole and walking to the castle instead of cutting off mid-jump. |
 | `--runs` | 1 | Plays several times in a row. |
+| `--sound` | off | Adds the game's music and sound effects to the recording (see below). |
+
+### Sound
+
+nes-py, the emulator under gym-super-mario-bros, has no sound chip, so its
+runs are silent. `--sound` gets the sound from a second NES emulator,
+stable-retro (FCEUmm), which is an optional extra because it is large
+(about 250 MB):
+
+```bash
+uv sync --extra sound
+python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4 --sound --no-render
+```
+
+Playing the same buttons on stable-retro doesn't work by itself: the two
+emulators differ in small timing details, and within a few seconds Mario is
+somewhere else (in a test, the trained network died at x = 594). So
+`marlio/sound.py` runs stable-retro *in lockstep*: before every frame it
+copies nes-py's RAM (the whole game state) into stable-retro, presses the
+same buttons, runs one frame and keeps the audio. The game's own sound code
+then plays exactly the sounds of the nes-py run. nes-py stays in charge, so
+the score (3467.5) and the picture are unchanged.
+
+Two details keep it sounding right:
+
+* nes-py sometimes runs 0 or 2 of the game's frames in one step. Copying
+  the music player's state would then make the music skip, so that part of
+  the RAM is left to stable-retro, which plays the tune smoothly.
+* The sound *requests* (one bit per jump, stomp, coin, flagpole, fanfare,
+  ...) are merged in, so every sound the run asks for is played.
+
+The audio is raised to just below full volume (the NES mix is quiet) and
+stored as AAC next to the H.264 picture. stable-retro needs a newer pyglet
+than nes-py declares; `pyproject.toml` overrides that pin, and nes-py works
+fine with it.
 
 ## How it fits in
 

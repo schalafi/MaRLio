@@ -66,6 +66,7 @@ fitness 3467.5, reached x=3161 in 1387 frames, LEVEL CLEARED
 | `--level` | `SuperMarioBros-1-1-v0` | which level to play |
 | `--record` | none | also save the run as an .mp4, e.g. `--record videos/neat-1-1.mp4` |
 | `--fps` | 60 | video frame rate; 60 keeps every game frame, 30 every other one |
+| `--sound` | off | with `--record`, add the game's music and sound effects to the video (needs `uv sync --extra sound`) |
 | `--no-overlay` | off | show the game without the network drawn on top |
 | `--scale` | 3 | enlarge the 256 x 240 screen this many times |
 | `--outro` | 3 | seconds to keep showing the game after the flag |

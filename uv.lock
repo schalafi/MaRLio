@@ -2,6 +2,9 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
+[manifest]
+overrides = [{ name = "pyglet", specifier = ">=1.5.27,<2" }]
+
 [[package]]
 name = "cloudpickle"
 version = "3.1.2"
@@ -312,6 +315,11 @@ dependencies = [
     { name = "pillow" },
 ]
 
+[package.optional-dependencies]
+sound = [
+    { name = "stable-retro" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "matplotlib" },
@@ -326,7 +334,9 @@ requires-dist = [
     { name = "nes-py", specifier = ">=9.0.1" },
     { name = "numpy" },
     { name = "pillow", specifier = ">=12.3.0" },
+    { name = "stable-retro", marker = "extra == 'sound'", specifier = ">=1.0.1" },
 ]
+provides-extras = ["sound"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -556,11 +566,11 @@ wheels = [
 
 [[package]]
 name = "pyglet"
-version = "1.5.21"
+version = "1.5.31"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5c/19/a92f13894876d24d98077686e44e77b7eb60e903e6c394ad1d9c43b5ddb1/pyglet-1.5.21.zip", hash = "sha256:5aaaddb06dc4b6f9ba08254d8d806a2bd2406925a9caf3a51fdffbd5d09728e2", size = 6971519, upload-time = "2021-09-16T13:44:04.375Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/c0/59130a7edbcc8f84e35870b00a712538ca05415ff02d17181277b8ef8f05/pyglet-1.5.31.zip", hash = "sha256:a5e422b4c27b0fc99e92103bf493109cca5c18143583b868b3b4631a98ae9417", size = 6900712, upload-time = "2024-12-24T07:10:58.022Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/b7/7736d7638d91b354700dc9bae447728c514c4bc6ecb4c0f7e0cd9a390f20/pyglet-1.5.21-py3-none-any.whl", hash = "sha256:11f11ddda4ee456284f2ddd1fe5c62fe29ba8c42074d3d9ae52d094abc2e1b7c", size = 1123555, upload-time = "2021-09-16T13:43:59.526Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/43/46aa0ab49f2f5145d201780c7595cf0c305fb4fb5d00d6639792a3d0e770/pyglet-1.5.31-py3-none-any.whl", hash = "sha256:f68413564bbec380e4815898fef0fb7a4a494dc3f8718bfbf28ce2a802634c88", size = 1143660, upload-time = "2024-12-24T07:10:50.769Z" },
 ]
 
 [[package]]
@@ -616,6 +626,23 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "stable-retro"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "farama-notifications" },
+    { name = "gymnasium" },
+    { name = "pyglet" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c2/70/44a58c6fe81aec4d83d85b9ed3d774aebc6e9fb8d81ea3542ea320ecebbb/stable_retro-1.0.1.tar.gz", hash = "sha256:68c43f2211f6314dc0727c2ad6cdefcc1c8621b7a38516c5afe15b523f3efcac", size = 152994540, upload-time = "2026-06-25T16:56:48.412Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/7a/86359bef7042d8d50fdf0a2b1c6d36ae389222098bd9e75059caadac82c5/stable_retro-1.0.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:8a06e8158a82dd4df35b1a5bdcbb6164bad645572b1a10a701a76e6e9700e0fa", size = 88644133, upload-time = "2026-06-25T16:56:20.748Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/6c/24d714948c79602dd0b6c11bfc1a7ce336c98cb0d7d709954499471876a6/stable_retro-1.0.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e3c21bc31c5ad623d9700d56b9dd688f39592bc21c66f24cf59dfdf07b03b466", size = 123169478, upload-time = "2026-06-25T16:56:27.16Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/94/7e18511874dcc02d2e79cabc17b71e7b7ac673de1d4e072973421790c6b4/stable_retro-1.0.1-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:8e6dabfff055a29a3d92142f8d417cc18811c6aa03de5af3fdbe743c30f94e0e", size = 88642986, upload-time = "2026-06-25T16:56:33.668Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/d6/4237309bb37190669e533fd0f1f00cb46acd7862aa054243d0392e772208/stable_retro-1.0.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4451c5f8209dbdbf343d29ab028ec7d40d28b9c7459ac4e632be990bc2f1eac3", size = 123166102, upload-time = "2026-06-25T16:56:40.64Z" },
 ]
 
 [[package]]
