@@ -17,8 +17,19 @@ dependencies = [
     "imageio-ffmpeg>=0.6.0",
 ]
 
+[project.optional-dependencies]
+# Real NES sound in recordings (play_neat.py --sound). Large (~250 MB: it
+# ships emulators for many consoles), so it's optional.
+sound = ["stable-retro>=1.0.1"]
+
 [dependency-groups]
 dev = ["pytest", "matplotlib"]
 
 [tool.setuptools.packages.find]
 include = ["marlio*"]
+
+[tool.uv]
+# nes-py caps pyglet at 1.5.21 and stable-retro needs 1.5.27 or newer; both
+# work with the last 1.5 release (tested: the nes-py game window and
+# stable-retro), so use that.
+override-dependencies = ["pyglet>=1.5.27,<2"]

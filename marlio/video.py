@@ -6,10 +6,14 @@ can use them, with or without an overlay drawn on the game.
 The NES draws about 60 frames per second and every ``env.step`` advances the
 game by exactly one frame, so a video at 60 fps plays at the real game
 speed. At 30 fps every other frame is kept: same speed, half the file size.
+
+``VideoRecorder`` can also take each frame's audio (see ``marlio.sound``)
+and adds it to the .mp4 as an AAC soundtrack.
 """
 
 from __future__ import annotations
 
+import subprocess
 import time
 from pathlib import Path
 
@@ -26,6 +30,10 @@ class VideoRecorder:
     nothing needs installing system-wide. Pass every game frame to
     ``add``: when ``fps`` is below 60 the recorder drops frames to keep the
     game at its real speed.
+
+    To add sound, pass each game frame's audio too (int16, one row per
+    sample, one column per channel; any number of samples per frame):
+    ``add(frame, audio)``. It's added when the recorder closes.
     """
 
     def __init__(self, path: str | Path, fps: int = NES_FPS, quality_crf: int = 18):
@@ -39,8 +47,12 @@ class VideoRecorder:
         self.frames_seen = 0
         self.frames_written = 0
         self._writer = None
+        self._audio: list[np.ndarray] = []
+        self._video_path = self.path
 
-    def add(self, frame: np.ndarray) -> None:
+    def add(self, frame: np.ndarray, audio: np.ndarray | None = None) -> None:
+        if audio is not None:
+            self._audio.append(np.asarray(audio, np.int16).reshape(len(audio), -1))
         if self.frames_seen % self.keep_every == 0:
             if self._writer is None:
                 self._open(frame.shape[1], frame.shape[0])
@@ -51,8 +63,11 @@ class VideoRecorder:
     def _open(self, width: int, height: int) -> None:
         import imageio_ffmpeg
 
+        # With sound, the picture goes to a temporary file first and the
+        # sound is added when the recorder closes.
+        self._video_path = self.path.with_suffix(".video.mp4") if self._audio else self.path
         self._writer = imageio_ffmpeg.write_frames(
-            str(self.path),
+            str(self._video_path),
             (width, height),
             fps=self.fps,
             codec="libx264",
@@ -70,9 +85,42 @@ class VideoRecorder:
         return self.frames_written / self.fps
 
     def close(self) -> None:
-        if self._writer is not None:
-            self._writer.close()
-            self._writer = None
+        if self._writer is None:
+            return
+        self._writer.close()
+        self._writer = None
+        if self._video_path != self.path:
+            self._add_sound()
+
+    def _add_sound(self) -> None:
+        import imageio_ffmpeg
+
+        audio = np.concatenate(self._audio)
+        # The NES mix is quiet next to other videos; raise it so its loudest
+        # moment is just below full scale (at most 4x).
+        peak = int(np.abs(audio.astype(np.int32)).max()) or 1
+        gain = min(4.0, 0.9 * 32767 / peak)
+        audio = np.clip(audio.astype(np.float32) * gain, -32768, 32767).astype(np.int16)
+        # The NES runs at 60.0988 frames per second, the video at exactly 60,
+        # so the audio's sample rate is set to whatever makes it last exactly
+        # as long as the video (a 0.16% change, which nobody can hear). That
+        # keeps sound and picture in sync from start to end.
+        rate = round(len(audio) / (self.frames_seen / NES_FPS))
+        raw = self.path.with_suffix(".audio.raw")
+        raw.write_bytes(audio.tobytes())
+        video = self._video_path
+        try:
+            subprocess.run(
+                [imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error",
+                 "-i", str(video),
+                 "-f", "s16le", "-ar", str(rate), "-ac", str(audio.shape[1]), "-i", str(raw),
+                 "-c:v", "copy", "-af", "aresample=48000", "-c:a", "aac", "-b:a", "160k",
+                 "-shortest", str(self.path)],
+                check=True,
+            )
+        finally:
+            raw.unlink(missing_ok=True)
+            video.unlink(missing_ok=True)
 
 
 class LiveViewer:

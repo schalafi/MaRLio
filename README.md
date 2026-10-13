@@ -51,12 +51,13 @@ marlio/
     neat/           MarI/O's NEAT: genomes, species, network, fitness, overlay
                     (inside-the-network.md explains the trained network)
   video.py        live window at game speed, and .mp4 recording
+  sound.py        the game's sound for recordings (stable-retro in lockstep with nes-py)
 scripts/
   random_agent.py       watch random play
   show_inputs.py        watch the game and the grid the network sees
   make_input_figure.py  regenerate the figure in docs/
   train_neat.py         evolve networks until one clears World 1-1
-  play_neat.py          watch a trained network play, with its network drawn on top; --record saves an .mp4
+  play_neat.py          watch a trained network play, with its network drawn on top; --record saves an .mp4, --sound adds the game's sound
   plot_neat_progress.py chart a training run's progress
 trained/
   neat-1-1.json         a network that clears World 1-1
@@ -93,6 +94,7 @@ A network that already clears World 1-1 (evolved in 67 generations) is in
 ```bash
 python scripts/play_neat.py trained/neat-1-1.json                               # live, with the network on top
 python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4  # also save an .mp4
+python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4 --sound  # ... with the game's sound
 ```
 
 ![The trained network playing, with its network drawn on top](docs/images/network-overlay.png)
