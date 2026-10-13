@@ -9,14 +9,13 @@ import pytest
 from marlio.agents.neat import N_INPUTS, N_OUTPUTS, Gene, Genome
 from marlio.agents.neat.display import (
     BIAS_POSITION,
-    BUTTON_X,
     GRID_CENTRE,
     HELD,
     HIDDEN_MAX_X,
     HIDDEN_MIN_X,
     HIDDEN_RADIUS,
+    OUTPUT_POSITIONS,
     NetworkDisplay,
-    button_centre,
     neuron_positions,
     value_text,
 )
@@ -39,7 +38,8 @@ def test_fixed_positions():
     assert positions[84] == GRID_CENTRE  # centre cell, where Mario is
     assert positions[0][0] < positions[1][0]  # row by row, left to right
     assert positions[BIAS] == BIAS_POSITION
-    assert positions[MAX_NODES] == (BUTTON_X, button_centre(0)[1])
+    assert positions[MAX_NODES] == OUTPUT_POSITIONS["A"]
+    assert positions[RIGHT] == OUTPUT_POSITIONS["right"]
 
 
 def test_hidden_neuron_sits_between_its_input_and_output():
@@ -62,7 +62,7 @@ def test_value_text(value, text):
     assert value_text(value) == text
 
 
-def test_draw_scales_the_screen_and_lights_held_buttons():
+def test_draw_scales_the_screen_and_lights_the_held_dpad_arm():
     genome = genome_with(Gene(BIAS, RIGHT, 1.0, innovation=1))
     network = Network(genome, N_INPUTS, N_OUTPUTS)
     display = NetworkDisplay(genome, network, scale=2)
@@ -71,9 +71,9 @@ def test_draw_scales_the_screen_and_lights_held_buttons():
     assert before.shape == (480, 512, 3)
     network.evaluate(np.zeros(N_INPUTS - 1))  # bias -> right: "right" is held
     after = display.draw(screen)
-    x, y = button_centre(5)
-    corner = after[int(y * 2) - 6, int(x * 2) - 20]  # inside the button, away from its label
-    assert tuple(corner) == HELD
+    x, y = OUTPUT_POSITIONS["right"]
+    assert tuple(before[int(y * 2), int(x * 2)]) != HELD
+    assert tuple(after[int(y * 2), int(x * 2)]) == HELD
     assert not np.array_equal(before, after)
 
 

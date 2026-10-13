@@ -26,16 +26,31 @@ time visible. The code is `marlio/agents/neat/display.py`.
 
 | what | where | meaning |
 |------|-------|---------|
-| **Input grid** | dark box, left | The 13 x 13 cells the network sees ([step 1](01-environment-and-inputs.md)). A white circle with `1` is a solid block, a black circle with `-1` an enemy; empty cells (input 0) are small dots. The red square in the middle is Mario's cell. |
-| **Bias** | the circle at the grid's bottom-right corner | The input that is always 1, so the network can press buttons even when it sees nothing. |
+| **Input grid** | dark box, left | The 13 x 13 cells the network sees ([step 1](01-environment-and-inputs.md)). A white square is a solid block, a black square an enemy; empty cells (input 0) are small dots. The red square in the middle is Mario's cell. |
+| **Bias** | the small white circle at the grid's bottom-right corner | The input that is always 1, so the network can press buttons even when it sees nothing. |
 | **Hidden neurons** | the circles in the middle | Neurons NEAT added during evolution. The number is the neuron's current value (rounded to one decimal: `1`, `.7`, `0`, `-.3`, `-1`) and the shade matches it, from black (-1) through grey (0) to white (+1). |
-| **Buttons** | right edge | One square button per output. It turns **blue** while the network holds that button. |
-| **Connections** | lines | **Green** = positive weight (the source pushes the target up), **red** = negative (pushes it down). Thicker = stronger weight. A line is bright while its source neuron is sending a signal and faint while the source is 0. |
+| **Controller** | right | The 6 outputs drawn as an NES controller. A D-pad arm turns **blue**, and the red **A** or **B** button lights up, while the network holds it. The controller is see-through, so Mario stays visible when he runs behind it. |
+| **Connections** | lines | **Amber** = positive weight (the source pushes the target up), **magenta** = negative (pushes it down). Thicker = stronger weight. A line is bright and outlined while its source neuron is sending a signal, and barely visible while the source is 0, so the grid isn't covered by connections from empty cells. |
 | **Info box** | left, under the grid | The level, this run's fitness as it builds up (x reached - frames / 2, +1000 at the flag) next to the genome's fitness from training, and Mario's x position. |
 
 The numbers in the circles are neuron *values* (what each neuron outputs
 right now). Weights belong to the connections, and are shown by each line's
 colour and thickness.
+
+### Why amber and magenta
+
+MarI/O uses green and red, which are the two colours people with the most
+common colour blindness (red-green, about 1 in 12 men) can't tell apart,
+and which are both close to colours already in the level (pipes, bushes,
+bricks). Colour-blind-safe guides recommend avoiding red/green pairs and
+making the two colours differ in lightness too
+([Datawrapper](https://www.datawrapper.de/blog/colorblindness-part2),
+[Okabe-Ito palette](https://conceptviz.app/blog/okabe-ito-palette-hex-codes-complete-reference)).
+The pair used here, amber `#FFB000` and magenta `#DC267F`, comes from IBM
+Design's colour-blind-safe palette
+([NCEAS summary](https://nceas.ucsb.edu/sites/default/files/2022-06/Colorblind%20Safe%20Color%20Schemes.pdf)),
+and neither is the sky's blue. Each active line also gets a thin dark
+outline, so it stays visible over sky, bricks or clouds alike.
 
 What to watch for: as a pipe edge (white circles) or an enemy (black
 circles) moves into the grid, the lines leaving those cells light up and the
@@ -59,9 +74,9 @@ per run.
 ### Keeping it sharp
 
 The network is drawn at twice the output size and scaled down, which smooths
-circles, text and lines. Lines are at least 1.5 NES pixels wide, so they
-survive video compression (which stores colour at half resolution and
-blurs thin coloured lines).
+circles, text and lines. Active lines are 1 to 2 NES pixels wide plus their
+outline, so they survive video compression (which stores colour at half
+resolution and blurs thin coloured lines).
 
 ## Recording
 
@@ -108,5 +123,5 @@ plus a 3 s outro) and about 11 MB at 768 x 720.
   values, which the `Network` from step 2 already keeps between frames.
 * The network's picture is redrawn only when its values change (when it
   thinks, every 5 frames), and only the part of the screen it covers is
-  blended, which keeps the live window at 60 fps (measured: 24.9 s to show
+  blended, which keeps the live window at 60 fps (measured: 25.0 s to show
   24.1 s of game, in a virtual display).

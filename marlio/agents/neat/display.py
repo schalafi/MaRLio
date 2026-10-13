@@ -12,18 +12,20 @@ in a window and in a video.
 
 What you see:
 
-* **Input grid** (left): the 13 x 13 cells the network sees. A white ``1``
-  is a solid block, a black ``-1`` an enemy; empty cells are small dots.
+* **Input grid** (left): the 13 x 13 cells the network sees. A white square
+  is a solid block, a black square an enemy; empty cells are small dots.
   The red square in the middle is Mario.
-* **Bias** (the circle at the grid's bottom-right corner): the input that is
-  always 1.
+* **Bias** (the small white circle at the grid's bottom-right corner): the
+  input that is always 1.
 * **Hidden neurons** (middle): one circle each, showing its current value,
   from black (-1) through grey (0) to white (+1).
-* **Buttons** (right): one square button per output, blue while the
-  network holds that button.
-* **Connections**: green for a positive weight, red for a negative one,
-  thicker for a stronger weight. A connection is drawn faint while the
-  neuron feeding it is 0 and bright while that neuron is sending a signal.
+* **Controller** (right): the 6 outputs drawn as an NES controller. A D-pad
+  arm turns blue, and the red A or B button lights up, while the network
+  holds it.
+* **Connections**: amber for a positive weight, magenta for a negative one,
+  thicker for a stronger weight. A connection is bright and outlined while
+  the neuron feeding it is sending a signal, and barely visible while that
+  neuron is 0.
 * **Info box** (left, under the grid): whatever lines the caller passes,
   such as the level and the fitness so far.
 """
@@ -42,30 +44,48 @@ from marlio.inputs import BOX_RADIUS
 # score / coins / world / time.
 GRID_CENTRE = (58, 88)
 CELL_SPACING = 8
-INPUT_RADIUS = 3.5
+INPUT_HALF = 3  # input squares are 6 x 6
 BIAS_POSITION = (116, 140)
-HIDDEN_START = (165, 60)
-HIDDEN_MIN_X, HIDDEN_MAX_X = 131, 202
+BIAS_RADIUS = 4
+HIDDEN_START = (160, 60)
+HIDDEN_MIN_X, HIDDEN_MAX_X = 131, 185
 HIDDEN_MIN_Y, HIDDEN_MAX_Y = 42, 138
 HIDDEN_RADIUS = 5.5
 # How far MarI/O pushes a hidden neuron right of the neurons feeding it
 # (MarI/O uses 40 for a 130-pixel-wide band; this band is narrower).
 HIDDEN_PUSH = 22
-BUTTON_X, BUTTON_WIDTH, BUTTON_HEIGHT = 216, 36, 11
-BUTTON_TOP, BUTTON_SPACING = 42, 15
 INFO_TOP = 146
 NETWORK_BOTTOM = 150
 
+# The outputs are drawn as an NES controller: a D-pad on top, B and A below.
+CONTROLLER = (196, 46, 254, 136)  # left, top, right, bottom
+DPAD_CENTRE = (225, 72)
+DPAD_HALF_WIDTH = 4.5  # half the width of each arm
+DPAD_REACH = 13.5  # from the centre to the end of each arm
+AB_RADIUS = 8
+OUTPUT_POSITIONS = {
+    "A": (238, 112),
+    "B": (212, 112),
+    "up": (DPAD_CENTRE[0], DPAD_CENTRE[1] - 9),
+    "down": (DPAD_CENTRE[0], DPAD_CENTRE[1] + 9),
+    "left": (DPAD_CENTRE[0] - 9, DPAD_CENTRE[1]),
+    "right": (DPAD_CENTRE[0] + 9, DPAD_CENTRE[1]),
+}
+
 SUPERSAMPLE = 2
 
-POSITIVE = (40, 210, 70)
-NEGATIVE = (235, 50, 40)
-HELD = (30, 110, 255)
+# Connection colours from IBM Design's colour-blind-safe palette: amber and
+# magenta stay distinct for red-green colour blindness (unlike green and
+# red), differ in lightness, and neither is the sky's blue or the bricks'
+# orange. Active connections also get a dark outline so they stand out on
+# any background.
+POSITIVE = (255, 176, 0)  # #FFB000
+NEGATIVE = (220, 38, 127)  # #DC267F
+CASING = (0, 0, 0, 170)
+HELD = (40, 140, 255)  # a pressed D-pad arm
+A_B_UP = (130, 25, 25)  # NES A/B red, not pressed...
+A_B_DOWN = (255, 60, 50)  # ... and pressed
 MARIO = (230, 30, 30)
-
-
-def button_centre(o: int) -> tuple[float, float]:
-    return BUTTON_X + BUTTON_WIDTH / 2, BUTTON_TOP + BUTTON_SPACING * o + BUTTON_HEIGHT / 2
 
 
 def neuron_positions(genome: Genome, n_inputs: int, n_outputs: int) -> dict[int, tuple[float, float]]:
@@ -87,7 +107,7 @@ def neuron_positions(genome: Genome, n_inputs: int, n_outputs: int) -> dict[int,
             i += 1
     positions[n_inputs - 1] = list(BIAS_POSITION)
     for o in range(n_outputs):
-        positions[MAX_NODES + o] = [BUTTON_X, button_centre(o)[1]]
+        positions[MAX_NODES + o] = list(OUTPUT_POSITIONS[BUTTONS[o]])
 
     def is_hidden(neuron: int) -> bool:
         return n_inputs <= neuron < MAX_NODES
@@ -175,7 +195,6 @@ class NetworkDisplay:
         self.scale = scale
         self.positions = neuron_positions(genome, network.n_inputs, network.n_outputs)
         u = scale * SUPERSAMPLE  # pixels per NES pixel while drawing the network
-        self.input_font = ImageFont.load_default(size=4 * u)
         self.hidden_font = ImageFont.load_default(size=4.5 * u)
         self.button_font = ImageFont.load_default(size=6 * u)
         self.info_font = ImageFont.load_default(size=7 * scale)
@@ -231,36 +250,51 @@ class NetworkDisplay:
         n_inputs = self.network.n_inputs
         positions = self.positions
 
-        def circle(x, y, r, fill, outline=(0, 0, 0, 255)):
+        def box(x0, y0, x1, y1, fill, outline=None, width=0, radius=0):
+            draw.rounded_rectangle((x0 * u, y0 * u, x1 * u, y1 * u), radius=radius * u,
+                                   fill=fill, outline=outline, width=round(width * u))
+
+        def circle(x, y, r, fill, outline=(0, 0, 0, 255), width=0.4):
             draw.ellipse(((x - r) * u, (y - r) * u, (x + r) * u, (y + r) * u),
-                         fill=fill, outline=outline, width=max(1, u // 3))
+                         fill=fill, outline=outline, width=max(1, round(width * u)))
 
         def label(x, y, text, font, fill):
             draw.text((x * u, y * u), text, fill=fill, font=font, anchor="mm")
 
-        # Backdrop behind the input grid, and Mario's cell.
+        # Backdrop behind the input grid, Mario's cell, and the controller.
         cx, cy = GRID_CENTRE
         half = BOX_RADIUS * CELL_SPACING + CELL_SPACING / 2 + 1
-        draw.rounded_rectangle(((cx - half) * u, (cy - half) * u, (cx + half) * u, (cy + half) * u),
-                               radius=2 * u, fill=(40, 40, 40, 0x90), outline=(0, 0, 0, 255), width=u // 2)
+        box(cx - half, cy - half, cx + half, cy + half, (40, 40, 40, 0x90), (0, 0, 0, 255), 0.5, 2)
         m = CELL_SPACING / 2
-        draw.rectangle(((cx - m) * u, (cy - m) * u, (cx + m) * u, (cy + m) * u), outline=MARIO, width=u)
+        box(cx - m, cy - m, cx + m, cy + m, None, MARIO, 1)
+        left, top, right, bottom = CONTROLLER
+        box(left, top, right, bottom, (200, 200, 200, 150), (60, 60, 60, 255), 0.5, 3)  # grey case (see-through, so Mario can be seen behind it)
+        box(left + 2.5, top + 2.5, right - 2.5, bottom - 2.5, (25, 25, 25, 150), None, 0, 2)  # black face
 
-        # Connections first, so neurons sit on top of their ends.
+        # Connections. Inactive ones (the neuron feeding them is 0) are kept
+        # faint and thin so the grid stays readable; active ones are bright,
+        # outlined, and thicker for stronger weights.
         for gene in self.genome.genes:
             if not gene.enabled:
                 continue
             (x1, y1), (x2, y2) = positions[gene.into], positions[gene.out]
-            x1 += INPUT_RADIUS if gene.into < n_inputs else HIDDEN_RADIUS
+            if gene.into < n_inputs - 1:
+                x1 += INPUT_HALF
+            else:
+                x1 += BIAS_RADIUS if gene.into == n_inputs - 1 else HIDDEN_RADIUS
             if gene.out < MAX_NODES:
                 x2 -= HIDDEN_RADIUS
-            active = values.get(gene.into, 0.0) != 0
             colour = POSITIVE if gene.weight > 0 else NEGATIVE
-            width = (0.5 + 1.0 * abs(sigmoid(gene.weight))) * u * (1 if active else 0.6)
-            draw.line((x1 * u, y1 * u, x2 * u, y2 * u),
-                      fill=(*colour, 235 if active else 35), width=max(1, round(width)))
+            points = (x1 * u, y1 * u, x2 * u, y2 * u)
+            if values.get(gene.into, 0.0) == 0:
+                draw.line(points, fill=(*colour, 30), width=max(1, round(0.4 * u)))
+                continue
+            width = (0.6 + 1.0 * abs(sigmoid(gene.weight))) * u
+            draw.line(points, fill=CASING, width=round(width + 0.8 * u))
+            draw.line(points, fill=(*colour, 255), width=max(1, round(width)))
 
-        # Inputs: a numbered circle for every cell that isn't empty, a dot otherwise.
+        # Inputs: a white square for a solid block, a black one for an enemy,
+        # a dot for an empty cell.
         for neuron in range(n_inputs - 1):
             x, y = positions[neuron]
             value = values.get(neuron, 0.0)
@@ -268,26 +302,41 @@ class NetworkDisplay:
                 circle(x, y, 0.8, (255, 255, 255, 0x50), outline=None)
                 continue
             shade = _shade(value)
-            circle(x, y, INPUT_RADIUS, (shade, shade, shade, 255))
-            label(x, y, value_text(value), self.input_font, (0, 0, 0) if shade > 140 else (255, 255, 255))
+            box(x - INPUT_HALF, y - INPUT_HALF, x + INPUT_HALF, y + INPUT_HALF,
+                (shade, shade, shade, 255), (0, 0, 0, 255) if shade > 128 else (255, 255, 255, 200), 0.4, 0.8)
 
-        # Bias and hidden neurons.
+        # Bias and hidden neurons: circles showing their value.
         for neuron, (x, y) in positions.items():
             if neuron < n_inputs - 1 or neuron >= MAX_NODES:
                 continue
             value = values.get(neuron, 0.0)
             shade = _shade(value)
+            if neuron == n_inputs - 1:
+                circle(x, y, BIAS_RADIUS, (255, 255, 255, 255))
+                continue
             circle(x, y, HIDDEN_RADIUS, (shade, shade, shade, 255))
             label(x, y, value_text(value), self.hidden_font, (0, 0, 0) if shade > 140 else (255, 255, 255))
 
-        # Buttons, blue while held.
-        for o, name in enumerate(BUTTONS):
-            held = values.get(MAX_NODES + o, 0.0) > 0
-            top = BUTTON_TOP + BUTTON_SPACING * o
-            draw.rounded_rectangle(
-                (BUTTON_X * u, top * u, (BUTTON_X + BUTTON_WIDTH) * u, (top + BUTTON_HEIGHT) * u),
-                radius=1.5 * u, fill=HELD + (255,) if held else (60, 60, 60, 230),
-                outline=(255, 255, 255, 255) if held else (0, 0, 0, 255), width=max(1, u // 2),
-            )
-            label(*button_centre(o), name, self.button_font, (255, 255, 255) if held else (170, 170, 170))
+        # The controller: D-pad arms light up blue, A and B light up red.
+        held = {name: values.get(MAX_NODES + o, 0.0) > 0 for o, name in enumerate(BUTTONS)}
+        dx, dy = DPAD_CENTRE
+        w, r = DPAD_HALF_WIDTH, DPAD_REACH
+        box(dx - w, dy - r, dx + w, dy + r, (55, 55, 55, 255), (0, 0, 0, 255), 0.5, 1)
+        box(dx - r, dy - w, dx + r, dy + w, (55, 55, 55, 255), (0, 0, 0, 255), 0.5, 1)
+        arms = {
+            "up": (dx - w, dy - r, dx + w, dy - w),
+            "down": (dx - w, dy + w, dx + w, dy + r),
+            "left": (dx - r, dy - w, dx - w, dy + w),
+            "right": (dx + w, dy - w, dx + r, dy + w),
+        }
+        for name, (x0, y0, x1, y1) in arms.items():
+            if held[name]:
+                box(x0 + 0.5, y0 + 0.5, x1 - 0.5, y1 - 0.5, HELD + (255,), (255, 255, 255, 255), 0.5, 1)
+        circle(dx, dy, 1.8, (35, 35, 35, 255), outline=None)
+        for name in ("B", "A"):
+            x, y = OUTPUT_POSITIONS[name]
+            pressed = held[name]
+            circle(x, y, AB_RADIUS, A_B_DOWN + (255,) if pressed else A_B_UP + (255,),
+                   (255, 255, 255, 255) if pressed else (0, 0, 0, 255), 0.8 if pressed else 0.5)
+            label(x, y + AB_RADIUS + 5, name, self.button_font, A_B_DOWN if pressed else (170, 40, 40))
         return layer
