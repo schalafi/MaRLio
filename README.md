@@ -49,6 +49,7 @@ marlio/
     base.py
     random_agent.py
     neat/           MarI/O's NEAT: genomes, species, network, fitness, overlay
+                    (inside-the-network.md explains the trained network)
   video.py        live window at game speed, and .mp4 recording
 scripts/
   random_agent.py       watch random play
@@ -63,7 +64,6 @@ docs/
   01-environment-and-inputs.md   step 1 explained
   02-neat.md                     step 2 explained
   03-overlay-and-recording.md    step 3 explained
-  04-inside-the-network.md       the trained network, part by part
 tests/
 ```
 
@@ -76,7 +76,7 @@ matches what it needs to see.
 1. [The environment and what the agent sees](docs/01-environment-and-inputs.md)
 2. [Evolving a network with NEAT](docs/02-neat.md)
 3. [Watching the network think, and recording it](docs/03-overlay-and-recording.md)
-4. [Inside the network that clears World 1-1](docs/04-inside-the-network.md)
+4. [Inside the network that clears World 1-1](marlio/agents/neat/inside-the-network.md)
 
 ## Train MarI/O
 

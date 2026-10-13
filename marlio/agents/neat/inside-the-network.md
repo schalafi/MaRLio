@@ -28,7 +28,7 @@ measured from that file and from replaying it.
 
 Unlike a textbook neural network there are no layers. Any neuron can
 connect to any other one, and the network's *shape* was found by evolution
-together with its weights (see [step 2](02-neat.md)).
+together with its weights (see [step 2](../../../docs/02-neat.md)).
 
 ## 1. Inputs: what the network sees
 
@@ -43,7 +43,7 @@ Every 5 frames the network gets **170 numbers**:
   
   Mario is always the centre cell. The grid reaches 6 blocks in every
   direction, about 100 pixels each way. How it's built is explained in
-  [step 1](01-environment-and-inputs.md).
+  [step 1](../../../docs/01-environment-and-inputs.md).
 * **1 bias.** An input that is always `1`. It lets the network press a
   button even when it sees nothing, like a constant "default urge". In this
   network the bias feeds "right" with weight +1.01, which on its own is

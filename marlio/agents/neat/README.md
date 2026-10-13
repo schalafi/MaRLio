@@ -108,3 +108,8 @@ env.close()
 | `network.py` | builds and runs the network for a genome |
 | `population.py` | species, selection, breeding, save/load |
 | `agent.py` | `NEATAgent` (presses buttons every 5 frames), `run_genome` (MarI/O's fitness), `Evaluator` (parallel games) |
+
+## Inside the trained network
+
+[inside-the-network.md](inside-the-network.md) takes apart `trained/neat-1-1.json`:
+its inputs, hidden neurons and where they came from, outputs, and edges.
