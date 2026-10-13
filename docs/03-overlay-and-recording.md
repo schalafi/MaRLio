@@ -20,9 +20,9 @@ records about as fast as the game can run (about 20 s for the 26 s clip).
 
 The layout follows MarI/O's (`displayGenome` in the Lua script): input grid
 on the left, hidden neurons in the middle, buttons on the right, connections
-coloured by sign. It is drawn larger than MarI/O's so every neuron can show
-its value as a number, and it leaves the game's score, coins, world and
-time visible. The code is `marlio/agents/neat/display.py`.
+coloured by sign. It fits in a band across the top third of the screen,
+under the game's score, coins, world and time, so the lower two thirds
+where Mario plays stay clear. The code is `marlio/agents/neat/display.py`.
 
 | what | where | meaning |
 |------|-------|---------|
@@ -30,34 +30,27 @@ time visible. The code is `marlio/agents/neat/display.py`.
 | **Bias** | the small white circle at the grid's bottom-right corner | The input that is always 1, so the network can press buttons even when it sees nothing. |
 | **Hidden neurons** | the circles in the middle | Neurons NEAT added during evolution. The number is the neuron's current value (rounded to one decimal: `1`, `.7`, `0`, `-.3`, `-1`) and the shade matches it, from black (-1) through grey (0) to white (+1). |
 | **Controller** | right | The 6 outputs drawn as an NES controller. A D-pad arm turns **blue**, and the red **A** or **B** button lights up, while the network holds it. The controller is see-through, so Mario stays visible when he runs behind it. |
-| **Connections** | lines | **Amber** = positive weight (the source pushes the target up), **magenta** = negative (pushes it down). Thicker = stronger weight. A line is bright and outlined while its source neuron is sending a signal, and barely visible while the source is 0, so the grid isn't covered by connections from empty cells. |
+| **Connections** | lines | Only connections carrying a signal right now (the neuron feeding them isn't 0) are drawn. **White** = positive weight (the source pushes the target up), **black** = negative (pushes it down). Thicker = stronger weight. Each line has an outline of the opposite shade so it shows on any background. |
 | **Info box** | left, under the grid | The level, this run's fitness as it builds up (x reached - frames / 2, +1000 at the flag) next to the genome's fitness from training, and Mario's x position. |
 
 The numbers in the circles are neuron *values* (what each neuron outputs
 right now). Weights belong to the connections, and are shown by each line's
 colour and thickness.
 
-### Why amber and magenta
+### One colour rule: white is +, black is -
 
-MarI/O uses green and red, which are the two colours people with the most
-common colour blindness (red-green, about 1 in 12 men) can't tell apart,
-and which are both close to colours already in the level (pipes, bushes,
-bricks). Colour-blind-safe guides recommend avoiding red/green pairs and
-making the two colours differ in lightness too
-([Datawrapper](https://www.datawrapper.de/blog/colorblindness-part2),
-[Okabe-Ito palette](https://conceptviz.app/blog/okabe-ito-palette-hex-codes-complete-reference)).
-The pair used here, amber `#FFB000` and magenta `#DC267F`, comes from IBM
-Design's colour-blind-safe palette
-([NCEAS summary](https://nceas.ucsb.edu/sites/default/files/2022-06/Colorblind%20Safe%20Color%20Schemes.pdf)),
-and neither is the sky's blue. Each active line also gets a thin dark
-outline, so it stays visible over sky, bricks or clouds alike.
+Everything uses the same rule. A neuron goes from black (-1) through grey (0)
+to white (+1); a solid block in the grid is white (+1) and an enemy black
+(-1); and a connection with a positive weight is white, one with a negative
+weight black. So a white line from a white square means "a block here pushes
+this neuron up", and a black line means "pushes it down".
 
-What to watch for: as a pipe edge (white circles) or an enemy (black
-circles) moves into the grid, the lines leaving those cells light up and the
-buttons change as the network reacts.
-
-The network only thinks every 5 frames (MarI/O's choice, see step 2) and
-holds its buttons in between, so the overlay changes in small steps.
+MarI/O itself uses green and red, which are the two colours people with the
+most common colour blindness can't tell apart
+([Datawrapper](https://www.datawrapper.de/blog/colorblindness-part2)).
+White and black differ only in lightness, so everyone sees the difference,
+in colour or grey. To keep lines visible on sky, clouds, bricks and the dark
+grid alike, white lines get a dark outline and black lines a light one.
 
 ### How hidden neurons get their place
 
@@ -74,9 +67,9 @@ per run.
 ### Keeping it sharp
 
 The network is drawn at twice the output size and scaled down, which smooths
-circles, text and lines. Active lines are 1 to 2 NES pixels wide plus their
-outline, so they survive video compression (which stores colour at half
-resolution and blurs thin coloured lines).
+circles, text and lines. Lines are 1 to 2 screen pixels wide plus their
+outline, and being black or white they don't suffer from video compression
+storing colour at half resolution (which blurs thin coloured lines).
 
 ## Recording
 
@@ -102,7 +95,7 @@ frame. So:
   dropped unevenly and the game would judder.
 
 The 60 fps recording of the trained network is about 26 s (23 s of play
-plus a 3 s outro) and about 11 MB at 768 x 720.
+plus a 3 s outro) and about 8 MB at 768 x 720.
 
 ### Other options
 
@@ -123,5 +116,5 @@ plus a 3 s outro) and about 11 MB at 768 x 720.
   values, which the `Network` from step 2 already keeps between frames.
 * The network's picture is redrawn only when its values change (when it
   thinks, every 5 frames), and only the part of the screen it covers is
-  blended, which keeps the live window at 60 fps (measured: 25.0 s to show
+  blended, which keeps the live window at 60 fps (measured: 25.6 s to show
   24.1 s of game, in a virtual display).

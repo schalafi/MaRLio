@@ -2,8 +2,9 @@
 
 This started as a port of MarI/O's ``displayGenome``: the same parts in the
 same places (input grid on the left, hidden neurons in the middle, buttons
-on the right), and the same way of placing hidden neurons. It is drawn
-larger than MarI/O's so every neuron can show its value as a number.
+on the right), and the same way of placing hidden neurons. It is kept to
+the top third of the screen so the level stays visible, and hidden neurons
+show their value as a number.
 
 Positions are in NES screen pixels (256 x 240). The screen is scaled up
 ``scale`` times and the network is drawn at that size (with 2x
@@ -22,10 +23,10 @@ What you see:
 * **Controller** (right): the 6 outputs drawn as an NES controller. A D-pad
   arm turns blue, and the red A or B button lights up, while the network
   holds it.
-* **Connections**: amber for a positive weight, magenta for a negative one,
-  thicker for a stronger weight. A connection is bright and outlined while
-  the neuron feeding it is sending a signal, and barely visible while that
-  neuron is 0.
+* **Connections**: only those carrying a signal right now are drawn. White
+  for a positive weight, black for a negative one (the same rule as the
+  neurons: white is +, black is -), thicker for a stronger weight, each with
+  an outline of the opposite shade.
 * **Info box** (left, under the grid): whatever lines the caller passes,
   such as the level and the fitness so far.
 """
@@ -40,48 +41,52 @@ from marlio.agents.neat.network import Network, sigmoid
 from marlio.controller import BUTTONS
 from marlio.inputs import BOX_RADIUS
 
-# Layout, in NES pixels. The top 34 rows are left free for the game's own
-# score / coins / world / time.
-GRID_CENTRE = (58, 88)
-CELL_SPACING = 8
-INPUT_HALF = 3  # input squares are 6 x 6
-BIAS_POSITION = (116, 140)
-BIAS_RADIUS = 4
-HIDDEN_START = (160, 60)
-HIDDEN_MIN_X, HIDDEN_MAX_X = 131, 185
-HIDDEN_MIN_Y, HIDDEN_MAX_Y = 42, 138
-HIDDEN_RADIUS = 5.5
+# Layout, in NES pixels. The network fits in a band across the top third of
+# the screen (rows 34-112), under the game's own score / coins / world /
+# time, so the lower two thirds, where Mario plays, stay clear.
+GRID_CENTRE = (44, 74)
+CELL_SPACING = 5.5
+INPUT_HALF = 2  # input squares are 4 x 4
+BIAS_POSITION = (86, 108)
+BIAS_RADIUS = 2.5
+HIDDEN_START = (140, 60)
+HIDDEN_MIN_X, HIDDEN_MAX_X = 98, 170
+HIDDEN_MIN_Y, HIDDEN_MAX_Y = 40, 108
+HIDDEN_RADIUS = 4
 # How far MarI/O pushes a hidden neuron right of the neurons feeding it
 # (MarI/O uses 40 for a 130-pixel-wide band; this band is narrower).
 HIDDEN_PUSH = 22
-INFO_TOP = 146
-NETWORK_BOTTOM = 150
+INFO_TOP = 116
+NETWORK_BOTTOM = 114
 
-# The outputs are drawn as an NES controller: a D-pad on top, B and A below.
-CONTROLLER = (196, 46, 254, 136)  # left, top, right, bottom
-DPAD_CENTRE = (225, 72)
-DPAD_HALF_WIDTH = 4.5  # half the width of each arm
-DPAD_REACH = 13.5  # from the centre to the end of each arm
-AB_RADIUS = 8
+# The outputs are drawn as an NES controller: D-pad on the left, B and A on
+# the right.
+CONTROLLER = (182, 54, 252, 96)  # left, top, right, bottom
+DPAD_CENTRE = (199, 75)
+DPAD_HALF_WIDTH = 3.5  # half the width of each arm
+DPAD_REACH = 10.5  # from the centre to the end of each arm
+AB_RADIUS = 6
 OUTPUT_POSITIONS = {
-    "A": (238, 112),
-    "B": (212, 112),
-    "up": (DPAD_CENTRE[0], DPAD_CENTRE[1] - 9),
-    "down": (DPAD_CENTRE[0], DPAD_CENTRE[1] + 9),
-    "left": (DPAD_CENTRE[0] - 9, DPAD_CENTRE[1]),
-    "right": (DPAD_CENTRE[0] + 9, DPAD_CENTRE[1]),
+    "A": (240, 72),
+    "B": (223, 72),
+    "up": (DPAD_CENTRE[0], DPAD_CENTRE[1] - 7),
+    "down": (DPAD_CENTRE[0], DPAD_CENTRE[1] + 7),
+    "left": (DPAD_CENTRE[0] - 7, DPAD_CENTRE[1]),
+    "right": (DPAD_CENTRE[0] + 7, DPAD_CENTRE[1]),
 }
 
 SUPERSAMPLE = 2
 
-# Connection colours from IBM Design's colour-blind-safe palette: amber and
-# magenta stay distinct for red-green colour blindness (unlike green and
-# red), differ in lightness, and neither is the sky's blue or the bricks'
-# orange. Active connections also get a dark outline so they stand out on
-# any background.
-POSITIVE = (255, 176, 0)  # #FFB000
-NEGATIVE = (220, 38, 127)  # #DC267F
-CASING = (0, 0, 0, 170)
+# One colour rule for the whole picture: white means +, black means -.
+# Neurons go from black (-1) to white (+1), solid blocks are white (+1) and
+# enemies black (-1), and so a connection with a positive weight is white
+# and one with a negative weight is black. Each line gets an outline of the
+# opposite shade (dark for white lines, light for black ones) so it shows on
+# sky, clouds, bricks and the dark grid alike.
+POSITIVE = (255, 255, 255)
+NEGATIVE = (10, 10, 10)
+POSITIVE_CASING = (0, 0, 0, 190)
+NEGATIVE_CASING = (255, 255, 255, 190)
 HELD = (40, 140, 255)  # a pressed D-pad arm
 A_B_UP = (130, 25, 25)  # NES A/B red, not pressed...
 A_B_DOWN = (255, 60, 50)  # ... and pressed
@@ -195,9 +200,9 @@ class NetworkDisplay:
         self.scale = scale
         self.positions = neuron_positions(genome, network.n_inputs, network.n_outputs)
         u = scale * SUPERSAMPLE  # pixels per NES pixel while drawing the network
-        self.hidden_font = ImageFont.load_default(size=4.5 * u)
-        self.button_font = ImageFont.load_default(size=6 * u)
-        self.info_font = ImageFont.load_default(size=7 * scale)
+        self.hidden_font = ImageFont.load_default(size=3.4 * u)
+        self.button_font = ImageFont.load_default(size=4.5 * u)
+        self.info_font = ImageFont.load_default(size=5.5 * scale)
         self._layer: Image.Image | None = None
         self._layer_key: tuple | None = None
         self._layer_box: tuple[int, int, int, int] = (0, 0, 0, 0)
@@ -231,9 +236,9 @@ class NetworkDisplay:
     def _draw_info(self, image: Image.Image, lines: list[str]) -> None:
         s = self.scale
         draw = ImageDraw.Draw(image, "RGBA")
-        pad, line_height = 3 * s, 9 * s
+        pad, line_height = 2 * s, 7 * s
         width = max(draw.textlength(line, font=self.info_font) for line in lines)
-        x0, y0 = 4 * s, INFO_TOP * s
+        x0, y0 = 3 * s, INFO_TOP * s
         draw.rounded_rectangle(
             (x0, y0, x0 + width + 2 * pad, y0 + line_height * len(lines) + pad),
             radius=2 * s, fill=(0, 0, 0, 0xB0),
@@ -264,18 +269,17 @@ class NetworkDisplay:
         # Backdrop behind the input grid, Mario's cell, and the controller.
         cx, cy = GRID_CENTRE
         half = BOX_RADIUS * CELL_SPACING + CELL_SPACING / 2 + 1
-        box(cx - half, cy - half, cx + half, cy + half, (40, 40, 40, 0x90), (0, 0, 0, 255), 0.5, 2)
+        box(cx - half, cy - half, cx + half, cy + half, (70, 70, 70, 0x90), (0, 0, 0, 255), 0.4, 1.5)
         m = CELL_SPACING / 2
-        box(cx - m, cy - m, cx + m, cy + m, None, MARIO, 1)
+        box(cx - m, cy - m, cx + m, cy + m, None, MARIO, 0.7)
         left, top, right, bottom = CONTROLLER
-        box(left, top, right, bottom, (200, 200, 200, 150), (60, 60, 60, 255), 0.5, 3)  # grey case (see-through, so Mario can be seen behind it)
-        box(left + 2.5, top + 2.5, right - 2.5, bottom - 2.5, (25, 25, 25, 150), None, 0, 2)  # black face
+        box(left, top, right, bottom, (200, 200, 200, 150), (60, 60, 60, 255), 0.4, 2.5)  # grey case (see-through, so Mario can be seen behind it)
+        box(left + 2, top + 2, right - 2, bottom - 2, (25, 25, 25, 150), None, 0, 1.5)  # black face
 
-        # Connections. Inactive ones (the neuron feeding them is 0) are kept
-        # faint and thin so the grid stays readable; active ones are bright,
-        # outlined, and thicker for stronger weights.
+        # Connections. Only the ones carrying a signal right now (the neuron
+        # feeding them isn't 0) are drawn, thicker for stronger weights.
         for gene in self.genome.genes:
-            if not gene.enabled:
+            if not gene.enabled or values.get(gene.into, 0.0) == 0:
                 continue
             (x1, y1), (x2, y2) = positions[gene.into], positions[gene.out]
             if gene.into < n_inputs - 1:
@@ -284,14 +288,11 @@ class NetworkDisplay:
                 x1 += BIAS_RADIUS if gene.into == n_inputs - 1 else HIDDEN_RADIUS
             if gene.out < MAX_NODES:
                 x2 -= HIDDEN_RADIUS
-            colour = POSITIVE if gene.weight > 0 else NEGATIVE
+            positive = gene.weight > 0
             points = (x1 * u, y1 * u, x2 * u, y2 * u)
-            if values.get(gene.into, 0.0) == 0:
-                draw.line(points, fill=(*colour, 30), width=max(1, round(0.4 * u)))
-                continue
-            width = (0.6 + 1.0 * abs(sigmoid(gene.weight))) * u
-            draw.line(points, fill=CASING, width=round(width + 0.8 * u))
-            draw.line(points, fill=(*colour, 255), width=max(1, round(width)))
+            width = (0.4 + 0.7 * abs(sigmoid(gene.weight))) * u
+            draw.line(points, fill=POSITIVE_CASING if positive else NEGATIVE_CASING, width=round(width + 0.7 * u))
+            draw.line(points, fill=(*(POSITIVE if positive else NEGATIVE), 255), width=max(1, round(width)))
 
         # Inputs: a white square for a solid block, a black one for an enemy,
         # a dot for an empty cell.
@@ -299,11 +300,11 @@ class NetworkDisplay:
             x, y = positions[neuron]
             value = values.get(neuron, 0.0)
             if value == 0:
-                circle(x, y, 0.8, (255, 255, 255, 0x50), outline=None)
+                circle(x, y, 0.6, (255, 255, 255, 0x40), outline=None)
                 continue
             shade = _shade(value)
             box(x - INPUT_HALF, y - INPUT_HALF, x + INPUT_HALF, y + INPUT_HALF,
-                (shade, shade, shade, 255), (0, 0, 0, 255) if shade > 128 else (255, 255, 255, 200), 0.4, 0.8)
+                (shade, shade, shade, 255), (0, 0, 0, 255) if shade > 128 else (255, 255, 255, 200), 0.3, 0.5)
 
         # Bias and hidden neurons: circles showing their value.
         for neuron, (x, y) in positions.items():
@@ -332,11 +333,11 @@ class NetworkDisplay:
         for name, (x0, y0, x1, y1) in arms.items():
             if held[name]:
                 box(x0 + 0.5, y0 + 0.5, x1 - 0.5, y1 - 0.5, HELD + (255,), (255, 255, 255, 255), 0.5, 1)
-        circle(dx, dy, 1.8, (35, 35, 35, 255), outline=None)
+        circle(dx, dy, 1.4, (35, 35, 35, 255), outline=None)
         for name in ("B", "A"):
             x, y = OUTPUT_POSITIONS[name]
             pressed = held[name]
             circle(x, y, AB_RADIUS, A_B_DOWN + (255,) if pressed else A_B_UP + (255,),
                    (255, 255, 255, 255) if pressed else (0, 0, 0, 255), 0.8 if pressed else 0.5)
-            label(x, y + AB_RADIUS + 5, name, self.button_font, A_B_DOWN if pressed else (170, 40, 40))
+            label(x, y + AB_RADIUS + 4, name, self.button_font, A_B_DOWN if pressed else (170, 40, 40))
         return layer
