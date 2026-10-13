@@ -51,9 +51,9 @@ def main():
     viewer = None if args.no_render else LiveViewer(f"MaRLio: NEAT on {level_name(args.level)}")
     recorder = VideoRecorder(args.record, fps=args.fps) if args.record else None
 
-    def show(screen: np.ndarray, display: NetworkDisplay | None, banner: list[str]) -> None:
+    def show(screen: np.ndarray, display: NetworkDisplay | None, info: list[str]) -> None:
         if display is not None:
-            frame = display.draw(screen, banner)
+            frame = display.draw(screen, info)
         else:
             height, width = screen.shape[:2]
             frame = np.asarray(Image.fromarray(screen).resize(
@@ -75,11 +75,12 @@ def main():
             fitness = state["rightmost"] - state["frames"] / 2
             if info["flag_get"] or state["rightmost"] > LEVEL_END_X:
                 fitness += 1000
-            state["banner"] = [
-                f"NEAT on {level_name(args.level)}   genome fitness {genome.fitness:.0f}",
-                f"Fitness: {fitness:.0f}   x: {info['x_pos']}" + ("   CLEARED!" if info["flag_get"] else ""),
+            state["info"] = [
+                f"NEAT  {level_name(args.level)}",
+                f"Fitness {fitness:.0f} / {genome.fitness:.0f}",
+                "CLEARED!" if info["flag_get"] else f"x {info['x_pos']}",
             ]
-            show(env.unwrapped.screen, state["display"], state["banner"])
+            show(env.unwrapped.screen, state["display"], state["info"])
 
         result = run_genome(env, genome, on_frame=on_frame)
         print(f"fitness {result.fitness:.1f}, reached x={result.rightmost} in {result.frames} frames"
@@ -92,7 +93,7 @@ def main():
         if result.cleared:
             for _ in range(int(args.outro * NES_FPS)):
                 env.unwrapped._frame_advance(0)
-                show(env.unwrapped.screen, state["display"], state["banner"])
+                show(env.unwrapped.screen, state["display"], state["info"])
 
     env.close()
     if viewer is not None:
