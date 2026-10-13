@@ -116,5 +116,5 @@ plus a 3 s outro) and about 8 MB at 768 x 720.
   values, which the `Network` from step 2 already keeps between frames.
 * The network's picture is redrawn only when its values change (when it
   thinks, every 5 frames), and only the part of the screen it covers is
-  blended, which keeps the live window at 60 fps (measured: 25.6 s to show
+  blended, which keeps the live window close to 60 fps (measured: 25.6 s to show
   24.1 s of game, in a virtual display).
