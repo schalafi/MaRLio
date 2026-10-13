@@ -44,11 +44,12 @@ On Linux you may also need `sudo apt-get install libgl1 libglu1-mesa`.
 marlio/
   env.py          make_env() for pixel-based RL, make_marios_env() for MarI/O
   inputs.py       MarI/O's 13x13 input grid, read from the game's memory
+  fitness.py      how good a run was, on any level (coins, kills, power-ups, ...)
   controller.py   MarI/O's 6-button controller
   agents/         one module per algorithm, all sharing the Agent interface
     base.py
     random_agent.py
-    neat/           MarI/O's NEAT: genomes, species, network, fitness, overlay
+    neat/           MarI/O's NEAT: genomes, species, network, overlay
                     (inside-the-network.md explains the trained network)
   video.py        live window at game speed, and .mp4 recording
   sound.py        the game's sound for recordings (stable-retro in lockstep with nes-py)

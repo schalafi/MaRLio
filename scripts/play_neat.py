@@ -22,7 +22,7 @@ import numpy as np
 from PIL import Image
 
 from marlio.agents.neat import Genome, run_genome
-from marlio.agents.neat.agent import fitness as run_fitness
+from marlio.fitness import fitness as run_fitness
 from marlio.agents.neat.display import NetworkDisplay
 from marlio.controller import buttons_to_byte
 from marlio.env import DEFAULT_LEVEL, make_marios_env
@@ -78,25 +78,22 @@ def main():
             recorder.add(frame, audio)
 
     for run in range(args.runs):
-        state = {"display": None, "rightmost": 0, "frames": 0}
+        state = {"display": None}
         if sound is not None:
             # run_genome resets the env too; nes-py always resets to the same
             # snapshot, so this is the RAM the run starts from.
             env.reset()
             sound.start(env.unwrapped.ram)
 
-        def on_frame(agent, info):
+        def on_frame(agent, info, stats):
             if state["display"] is None and not args.no_overlay:
                 state["display"] = NetworkDisplay(genome, agent.network, scale=args.scale)
-            state["frames"] += 1
-            state["rightmost"] = max(state["rightmost"], info["x_pos"])
             # The same score run_genome gives at the end, shown as it builds up.
-            fitness = run_fitness(state["rightmost"], state["frames"],
-                                  info["is_dying"] or info["is_dead"], info["flag_get"])
             state["info"] = [
                 f"NEAT  {level_name(args.level)}",
-                f"Fitness {fitness:.0f} / {genome.fitness:.0f}",
+                f"Fitness {run_fitness(stats):.0f} / {genome.fitness:.0f}",
                 "CLEARED!" if info["flag_get"] else f"x {info['x_pos']}",
+                f"coins {stats.coins}  kills {stats.kills}  power {stats.powerups}",
             ]
             audio = sound.step(buttons_to_byte(agent.buttons), env.unwrapped.ram) if sound else None
             show(env.unwrapped.screen, state["display"], state["info"], audio)

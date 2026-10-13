@@ -3,7 +3,6 @@ import random
 import numpy as np
 
 from marlio.agents.neat import N_INPUTS, N_OUTPUTS, Gene, Genome, NEATConfig, Population, run_genome
-from marlio.agents.neat.agent import fitness
 from marlio.agents.neat.genome import (
     MAX_NODES,
     Innovations,
@@ -17,6 +16,7 @@ from marlio.agents.neat.genome import (
 )
 from marlio.agents.neat.network import Network
 from marlio.env import make_marios_env
+from marlio.fitness import RunStats, fitness
 
 CONFIG = NEATConfig()
 RIGHT = MAX_NODES + 5  # output neuron for the "right" button
@@ -121,12 +121,36 @@ def test_generation_keeps_population_size_and_saves(tmp_path):
 
 def test_fitness_prefers_waiting_to_dying():
     # Waiting 200 frames and getting 50 px further beats running in and dying.
-    died = fitness(1950, 1000, died=True, cleared=False)
-    waited = fitness(2000, 1200, died=False, cleared=False)
+    died = fitness(RunStats(rightmost=1950, frames=1000, died=True))
+    waited = fitness(RunStats(rightmost=2000, frames=1200))
     assert waited > died
     # The flag bonus comes from flag_get only, not from an x position.
-    assert fitness(3300, 2000, False, cleared=False) < 3300
-    assert fitness(3300, 2000, False, cleared=True) == 3300 - 200 + 1000
+    assert fitness(RunStats(rightmost=3300, frames=2000)) == 3300 - 200
+    assert fitness(RunStats(rightmost=3300, frames=2000, cleared=True)) == 3300 - 200 + 1000
+
+
+def test_fitness_rewards_coins_kills_and_powerups():
+    base = fitness(RunStats(rightmost=1000, frames=500))
+    assert fitness(RunStats(rightmost=1000, frames=500, coins=2)) == base + 40
+    assert fitness(RunStats(rightmost=1000, frames=500, kills=1)) == base + 50
+    assert fitness(RunStats(rightmost=1000, frames=500, powerups=1)) == base + 200
+    assert fitness(RunStats(rightmost=1000, frames=500, hits=1)) == base - 100
+
+
+def test_run_stats_counts_from_info_and_ram():
+    ram = np.zeros(0x800, dtype=np.uint8)
+    info = {"x_pos": 40, "coins": 98, "status": "small", "is_dying": False,
+            "is_dead": False, "flag_get": False}
+    stats = RunStats()
+    stats.start(info, ram)
+    ram[0x1F] = 0x04                                   # an enemy is stomped
+    stats.update({**info, "coins": 99, "status": "tall"}, ram)
+    stats.update({**info, "coins": 0, "status": "tall"}, ram)   # coin 100 -> 0
+    ram[0x1F], ram[0x20] = 0x00, 0x20                  # slot freed; another hit by fire
+    stats.update({**info, "x_pos": 90, "coins": 0, "status": "small"}, ram)
+    assert (stats.rightmost, stats.frames) == (90, 3)
+    assert (stats.coins, stats.kills, stats.powerups, stats.hits) == (2, 2, 1, 1)
+    assert not stats.died
 
 
 def test_run_genome_scores_with_fitness():
@@ -138,4 +162,4 @@ def test_run_genome_scores_with_fitness():
     env.close()
     assert still.frames < 40
     assert runner.rightmost > still.rightmost
-    assert runner.fitness == fitness(runner.rightmost, runner.frames, runner.died, runner.cleared)
+    assert runner.fitness == fitness(runner.stats)

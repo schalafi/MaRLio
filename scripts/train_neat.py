@@ -5,7 +5,7 @@
     python scripts/train_neat.py --resume runs/neat/population.json
 
 Each generation every new genome plays one run (in parallel on all CPU
-cores), gets a fitness (``fitness()`` in marlio/agents/neat/agent.py), and the population breeds the next
+cores), gets a fitness (``marlio/fitness.py``), and the population breeds the next
 generation. Saved in ``--out`` after every generation:
 
 * ``population.json``  the whole population, to resume training
@@ -141,7 +141,7 @@ def _buttons_to(level: str, genome_path: str, x: int) -> list[list[int]]:
     env = make_marios_env(level)
     buttons, reached = [], []
 
-    def on_frame(agent, info):
+    def on_frame(agent, info, stats):
         if not reached:
             buttons.append(list(agent.buttons))
             if info["x_pos"] >= x:

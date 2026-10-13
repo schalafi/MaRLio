@@ -108,7 +108,7 @@ env.close()
 | `genome.py` | genes, mutations, crossover, speciation distance, MarI/O's constants (`NEATConfig`) |
 | `network.py` | builds and runs the network for a genome |
 | `population.py` | species, selection, breeding, save/load |
-| `agent.py` | `NEATAgent` (presses buttons every 5 frames), `run_genome` and `fitness()` (the score), `Evaluator` (parallel games) |
+| `agent.py` | `NEATAgent` (presses buttons every 5 frames), `run_genome` (plays and scores a run with `marlio/fitness.py`), `Evaluator` (parallel games) |
 
 ## Inside the trained network
 
