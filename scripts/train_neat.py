@@ -5,7 +5,7 @@
     python scripts/train_neat.py --resume runs/neat/population.json
 
 Each generation every new genome plays one run (in parallel on all CPU
-cores), gets MarI/O's fitness, and the population breeds the next
+cores), gets a fitness (``fitness()`` in marlio/agents/neat/agent.py), and the population breeds the next
 generation. Saved in ``--out`` after every generation:
 
 * ``population.json``  the whole population, to resume training
@@ -62,7 +62,10 @@ def main():
         (out / "practice.json").write_text(json.dumps(
             {"from": args.practice_from, "x": args.practice_x, "buttons": practice}))
         print(f"Practice start at x={args.practice_x} ({len(practice)} frames in)")
-        # Every genome is scored afresh, the same way (both runs).
+    if args.resume or practice:
+        # Every genome is scored afresh, the same way (both runs with a
+        # practice start; and a saved population may have been scored by an
+        # older fitness function).
         for genome in population.genomes():
             genome.fitness = 0
         population.max_fitness = 0.0

@@ -26,8 +26,26 @@ THINK_EVERY = 5
 # Frames Mario may go without reaching a new rightmost point before the run
 # ends (MarI/O's TimeoutConstant). Runs get a bonus of frames / 4 on top.
 TIMEOUT = 20
-# MarI/O's x-position for "reached the end of World 1-1".
+# MarI/O's x-position for "reached the end of World 1-1". Only used for
+# drawing progress charts now; the fitness uses the game's flag_get.
 LEVEL_END_X = 3186
+
+# The fitness (see ``fitness()``). MarI/O charged 1/2 per frame and nothing
+# for dying, so waiting for an enemy scored worse than running into it.
+TIME_PENALTY = 1 / 10   # per frame: waiting 200 frames costs 20
+DEATH_PENALTY = 100     # dying is worth giving up 100 px of progress
+FLAG_BONUS = 1000
+
+
+def fitness(rightmost: int, frames: int, died: bool, cleared: bool) -> float:
+    """How good a run was: how far right Mario got, a little less for time
+    used, less again if he died, and a bonus for reaching the flag."""
+    score = rightmost - frames * TIME_PENALTY
+    if died:
+        score -= DEATH_PENALTY
+    if cleared:
+        score += FLAG_BONUS
+    return score
 
 
 class NEATAgent(Agent):
@@ -54,6 +72,7 @@ class RunResult:
     rightmost: int
     frames: int
     cleared: bool
+    died: bool = False
     # The run from the practice start, when training uses one (see Evaluator).
     practice: RunResult | None = None
 
@@ -66,10 +85,9 @@ def run_genome(
     start_from=None,
     start_frame: int = 0,
 ) -> RunResult:
-    """Play one run and score it like MarI/O.
+    """Play one run and score it with ``fitness()``.
 
-    fitness = how far right Mario got - frames used / 2, plus 1000 for
-    clearing the level. The run ends when Mario stops making progress
+    The run ends like in MarI/O: when Mario stops making progress
     (timeout), dies, or reaches the flag.
 
     ``on_frame(agent, info)`` is called after every frame, for example to
@@ -88,7 +106,7 @@ def run_genome(
         env.unwrapped._did_reset()
         grid = input_grid(env.unwrapped.ram)
     rightmost, timeout, frame = 0, TIMEOUT, start_frame
-    cleared = False
+    cleared = died = False
     while True:
         grid, _, terminated, truncated, info = env.step(agent.act(grid))
         if render:
@@ -101,17 +119,15 @@ def run_genome(
             timeout = TIMEOUT
         timeout -= 1
         cleared = cleared or info["flag_get"]
+        died = died or info["is_dying"] or info["is_dead"]
         # MarI/O only stops on the timeout; stopping on death or the flag
         # as well gives the same scores, just sooner.
-        if (timeout + frame / 4 <= 0 or terminated or truncated or cleared
-                or info["is_dying"] or info["is_dead"]):
+        if timeout + frame / 4 <= 0 or terminated or truncated or cleared or died:
             break
-    fitness = rightmost - frame / 2
-    if cleared or rightmost > LEVEL_END_X:
-        fitness += 1000
-    if fitness == 0:
-        fitness = -1  # 0 means "not measured yet"
-    return RunResult(fitness, rightmost, frame, cleared)
+    score = fitness(rightmost, frame, died, cleared)
+    if score == 0:
+        score = -1  # 0 means "not measured yet"
+    return RunResult(score, rightmost, frame, cleared, died)
 
 
 # --- Running many genomes in parallel ----------------------------------------
@@ -148,7 +164,7 @@ def play(env: gym.Env, genome: Genome, practice=None) -> RunResult:
     state, frames_in = practice
     extra = run_genome(env, genome, start_from=state, start_frame=frames_in)
     return RunResult(result.fitness + extra.fitness, result.rightmost, result.frames,
-                     result.cleared, practice=extra)
+                     result.cleared, result.died, practice=extra)
 
 
 def _init_worker(level: str, practice_buttons) -> None:

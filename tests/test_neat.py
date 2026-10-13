@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 from marlio.agents.neat import N_INPUTS, N_OUTPUTS, Gene, Genome, NEATConfig, Population, run_genome
+from marlio.agents.neat.agent import fitness
 from marlio.agents.neat.genome import (
     MAX_NODES,
     Innovations,
@@ -118,7 +119,17 @@ def test_generation_keeps_population_size_and_saves(tmp_path):
     assert loaded.rng.random() == population.rng.random()
 
 
-def test_run_genome_scores_like_marios():
+def test_fitness_prefers_waiting_to_dying():
+    # Waiting 200 frames and getting 50 px further beats running in and dying.
+    died = fitness(1950, 1000, died=True, cleared=False)
+    waited = fitness(2000, 1200, died=False, cleared=False)
+    assert waited > died
+    # The flag bonus comes from flag_get only, not from an x position.
+    assert fitness(3300, 2000, False, cleared=False) < 3300
+    assert fitness(3300, 2000, False, cleared=True) == 3300 - 200 + 1000
+
+
+def test_run_genome_scores_with_fitness():
     env = make_marios_env()
     # Standing still: no progress, the run times out quickly.
     still = run_genome(env, genome_with())
@@ -127,4 +138,4 @@ def test_run_genome_scores_like_marios():
     env.close()
     assert still.frames < 40
     assert runner.rightmost > still.rightmost
-    assert runner.fitness == runner.rightmost - runner.frames / 2
+    assert runner.fitness == fitness(runner.rightmost, runner.frames, runner.died, runner.cleared)

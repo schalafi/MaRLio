@@ -22,7 +22,7 @@ import numpy as np
 from PIL import Image
 
 from marlio.agents.neat import Genome, run_genome
-from marlio.agents.neat.agent import LEVEL_END_X
+from marlio.agents.neat.agent import fitness as run_fitness
 from marlio.agents.neat.display import NetworkDisplay
 from marlio.controller import buttons_to_byte
 from marlio.env import DEFAULT_LEVEL, make_marios_env
@@ -91,9 +91,8 @@ def main():
             state["frames"] += 1
             state["rightmost"] = max(state["rightmost"], info["x_pos"])
             # The same score run_genome gives at the end, shown as it builds up.
-            fitness = state["rightmost"] - state["frames"] / 2
-            if info["flag_get"] or state["rightmost"] > LEVEL_END_X:
-                fitness += 1000
+            fitness = run_fitness(state["rightmost"], state["frames"],
+                                  info["is_dying"] or info["is_dead"], info["flag_get"])
             state["info"] = [
                 f"NEAT  {level_name(args.level)}",
                 f"Fitness {fitness:.0f} / {genome.fitness:.0f}",

@@ -31,7 +31,7 @@ where Mario plays stay clear. The code is `marlio/agents/neat/display.py`.
 | **Hidden neurons** | the circles in the middle | Neurons NEAT added during evolution. The number is the neuron's current value (rounded to one decimal: `1`, `.7`, `0`, `-.3`, `-1`) and the shade matches it, from black (-1) through grey (0) to white (+1). |
 | **Controller** | right | The 6 outputs drawn as an NES controller. A D-pad arm turns **blue**, and the red **A** or **B** button lights up, while the network holds it. The controller is see-through, so Mario stays visible when he runs behind it. |
 | **Connections** | lines | Only connections carrying a signal right now (the neuron feeding them isn't 0) are drawn. **White** = positive weight (the source pushes the target up), **black** = negative (pushes it down). Thicker = stronger weight. Each line has an outline of the opposite shade so it shows on any background. |
-| **Info box** | left, under the grid | The level, this run's fitness as it builds up (x reached - frames / 2, +1000 at the flag) next to the genome's fitness from training, and Mario's x position. |
+| **Info box** | left, under the grid | The level, this run's fitness as it builds up (`fitness()` in `agent.py`, see [docs/05-fitness.md](05-fitness.md)) next to the genome's fitness from training, and Mario's x position. |
 
 The numbers in the circles are neuron *values* (what each neuron outputs
 right now). Weights belong to the connections, and are shown by each line's

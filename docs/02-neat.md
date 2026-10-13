@@ -105,7 +105,9 @@ MarI/O's fitness:
 fitness = (rightmost x reached) - (frames used) / 2   (+ 1000 for clearing the level)
 ```
 
-Going right is rewarded, wasting time is penalised. A run ends when Mario
+Going right is rewarded, wasting time is penalised. (This was the fitness
+for step 2. It has since been changed so that dying costs more than waiting;
+see [05-fitness.md](05-fitness.md).) A run ends when Mario
 hasn't reached a new rightmost point for 20 frames (plus a grace period of a
 quarter of the frames so far), dies, or reaches the flag. MarI/O only uses the
 timeout; ending at death or the flag gives the same scores, just sooner.
