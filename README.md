@@ -48,19 +48,22 @@ marlio/
   agents/         one module per algorithm, all sharing the Agent interface
     base.py
     random_agent.py
-    neat/           MarI/O's NEAT: genomes, species, network, fitness
+    neat/           MarI/O's NEAT: genomes, species, network, fitness, overlay
+                    (inside-the-network.md explains the trained network)
+  video.py        live window at game speed, and .mp4 recording
 scripts/
   random_agent.py       watch random play
   show_inputs.py        watch the game and the grid the network sees
   make_input_figure.py  regenerate the figure in docs/
   train_neat.py         evolve networks until one clears World 1-1
-  play_neat.py          watch a trained network play
+  play_neat.py          watch a trained network play, with its network drawn on top; --record saves an .mp4
   plot_neat_progress.py chart a training run's progress
 trained/
   neat-1-1.json         a network that clears World 1-1
 docs/
   01-environment-and-inputs.md   step 1 explained
   02-neat.md                     step 2 explained
+  03-overlay-and-recording.md    step 3 explained
 tests/
 ```
 
@@ -72,6 +75,8 @@ matches what it needs to see.
 
 1. [The environment and what the agent sees](docs/01-environment-and-inputs.md)
 2. [Evolving a network with NEAT](docs/02-neat.md)
+3. [Watching the network think, and recording it](docs/03-overlay-and-recording.md)
+4. [Inside the network that clears World 1-1](marlio/agents/neat/inside-the-network.md)
 
 ## Train MarI/O
 
@@ -86,8 +91,11 @@ A network that already clears World 1-1 (evolved in 67 generations) is in
 `trained/`:
 
 ```bash
-python scripts/play_neat.py trained/neat-1-1.json
+python scripts/play_neat.py trained/neat-1-1.json                               # live, with the network on top
+python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4  # also save an .mp4
 ```
+
+![The trained network playing, with its network drawn on top](docs/images/network-overlay.png)
 
 ## Tests
 

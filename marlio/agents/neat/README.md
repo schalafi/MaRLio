@@ -62,8 +62,18 @@ fitness 3467.5, reached x=3161 in 1387 frames, LEVEL CLEARED
 | option | default | what it does |
 |--------|---------|--------------|
 | `--runs` | 1 | how many times to play |
-| `--no-render` | off | no window, only print the result |
+| `--no-render` | off | no window, only print the result (and record, with `--record`) |
 | `--level` | `SuperMarioBros-1-1-v0` | which level to play |
+| `--record` | none | also save the run as an .mp4, e.g. `--record videos/neat-1-1.mp4` |
+| `--fps` | 60 | video frame rate; 60 keeps every game frame, 30 every other one |
+| `--no-overlay` | off | show the game without the network drawn on top |
+| `--scale` | 3 | enlarge the 256 x 240 screen this many times |
+| `--outro` | 3 | seconds to keep showing the game after the flag |
+
+The window and the video show the network on top of the game, as MarI/O
+does: the input grid, hidden neurons, connections lighting up and the
+buttons being pressed. [docs/03-overlay-and-recording.md](../../../docs/03-overlay-and-recording.md)
+explains how to read it.
 
 ## Chart a run
 
@@ -98,3 +108,8 @@ env.close()
 | `network.py` | builds and runs the network for a genome |
 | `population.py` | species, selection, breeding, save/load |
 | `agent.py` | `NEATAgent` (presses buttons every 5 frames), `run_genome` (MarI/O's fitness), `Evaluator` (parallel games) |
+
+## Inside the trained network
+
+[inside-the-network.md](inside-the-network.md) takes apart `trained/neat-1-1.json`:
+its inputs, hidden neurons and where they came from, outputs, and edges.

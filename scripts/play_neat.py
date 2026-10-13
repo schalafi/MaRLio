@@ -1,14 +1,34 @@
-"""Watch a trained NEAT genome play.
+"""Watch a trained NEAT genome play, with its network drawn over the game.
 
-    python scripts/play_neat.py runs/neat/best.json
+    python scripts/play_neat.py trained/neat-1-1.json
+    python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4
+    python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4 --no-render
+
+The window shows the game at its real speed (60 frames per second) with
+MarI/O's view of the network on top: the input grid, the hidden neurons, the
+connections lighting up and the buttons being pressed. ``--record`` also
+saves exactly what the window shows to an .mp4. ``--no-render`` skips the
+window, which makes recording much faster and works without a desktop.
 """
 
 import argparse
 import json
 from pathlib import Path
 
+import numpy as np
+from PIL import Image
+
 from marlio.agents.neat import Genome, run_genome
+from marlio.agents.neat.agent import LEVEL_END_X
+from marlio.agents.neat.display import NetworkDisplay
 from marlio.env import DEFAULT_LEVEL, make_marios_env
+from marlio.video import NES_FPS, LiveViewer, VideoRecorder
+
+
+def level_name(env_id: str) -> str:
+    """"SuperMarioBros-1-1-v0" -> "World 1-1"."""
+    parts = env_id.split("-")
+    return f"World {parts[1]}-{parts[2]}" if len(parts) >= 4 else env_id
 
 
 def main():
@@ -16,16 +36,71 @@ def main():
     parser.add_argument("genome", help="a genome .json saved by train_neat.py")
     parser.add_argument("--level", default=DEFAULT_LEVEL)
     parser.add_argument("--runs", type=int, default=1)
-    parser.add_argument("--no-render", action="store_true")
+    parser.add_argument("--no-render", action="store_true", help="don't open a window")
+    parser.add_argument("--no-overlay", action="store_true", help="show the game only, without the network")
+    parser.add_argument("--record", metavar="MP4", help="also save the run as a video to this path")
+    parser.add_argument("--fps", type=int, default=NES_FPS,
+                        help="video frame rate: 60 keeps every game frame, 30 every other one (default 60)")
+    parser.add_argument("--scale", type=int, default=3, help="enlarge the 256x240 screen this many times (default 3)")
+    parser.add_argument("--outro", type=float, default=3.0,
+                        help="seconds to keep showing the game after the level is cleared (default 3)")
     args = parser.parse_args()
 
     genome = Genome.from_dict(json.loads(Path(args.genome).read_text()))
-    env = make_marios_env(args.level, render_mode=None if args.no_render else "human")
-    for _ in range(args.runs):
-        result = run_genome(env, genome, render=not args.no_render)
+    env = make_marios_env(args.level)
+    viewer = None if args.no_render else LiveViewer(f"MaRLio: NEAT on {level_name(args.level)}")
+    recorder = VideoRecorder(args.record, fps=args.fps) if args.record else None
+
+    def show(screen: np.ndarray, display: NetworkDisplay | None, info: list[str]) -> None:
+        if display is not None:
+            frame = display.draw(screen, info)
+        else:
+            height, width = screen.shape[:2]
+            frame = np.asarray(Image.fromarray(screen).resize(
+                (width * args.scale, height * args.scale), Image.Resampling.NEAREST))
+        if viewer is not None:
+            viewer.show(frame)
+        if recorder is not None:
+            recorder.add(frame)
+
+    for run in range(args.runs):
+        state = {"display": None, "rightmost": 0, "frames": 0}
+
+        def on_frame(agent, info):
+            if state["display"] is None and not args.no_overlay:
+                state["display"] = NetworkDisplay(genome, agent.network, scale=args.scale)
+            state["frames"] += 1
+            state["rightmost"] = max(state["rightmost"], info["x_pos"])
+            # The same score run_genome gives at the end, shown as it builds up.
+            fitness = state["rightmost"] - state["frames"] / 2
+            if info["flag_get"] or state["rightmost"] > LEVEL_END_X:
+                fitness += 1000
+            state["info"] = [
+                f"NEAT  {level_name(args.level)}",
+                f"Fitness {fitness:.0f} / {genome.fitness:.0f}",
+                "CLEARED!" if info["flag_get"] else f"x {info['x_pos']}",
+            ]
+            show(env.unwrapped.screen, state["display"], state["info"])
+
+        result = run_genome(env, genome, on_frame=on_frame)
         print(f"fitness {result.fitness:.1f}, reached x={result.rightmost} in {result.frames} frames"
               + (", LEVEL CLEARED" if result.cleared else ""))
+
+        # After the flag, let the game play on (no buttons pressed) so the
+        # run ends on Mario sliding down the pole, not mid-jump. The env
+        # refuses to step once the episode is over, so this advances the
+        # emulator directly.
+        if result.cleared:
+            for _ in range(int(args.outro * NES_FPS)):
+                env.unwrapped._frame_advance(0)
+                show(env.unwrapped.screen, state["display"], state["info"])
+
     env.close()
+    if viewer is not None:
+        viewer.close()
+    if recorder is not None:
+        recorder.close()
+        print(f"saved {recorder.path} ({recorder.seconds:.1f} s at {recorder.fps} fps)")
 
 
 if __name__ == "__main__":

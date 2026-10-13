@@ -13,6 +13,8 @@ dependencies = [
     "nes-py>=9.0.1",
     "gymnasium>=1.0.0",
     "numpy",
+    "pillow>=12.3.0",
+    "imageio-ffmpeg>=0.6.0",
 ]
 
 [dependency-groups]

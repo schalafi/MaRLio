@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import multiprocessing as mp
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import gymnasium as gym
@@ -55,12 +56,20 @@ class RunResult:
     cleared: bool
 
 
-def run_genome(env: gym.Env, genome: Genome, render: bool = False) -> RunResult:
+def run_genome(
+    env: gym.Env,
+    genome: Genome,
+    render: bool = False,
+    on_frame: Callable[[NEATAgent, dict], None] | None = None,
+) -> RunResult:
     """Play one run and score it like MarI/O.
 
     fitness = how far right Mario got - frames used / 2, plus 1000 for
     clearing the level. The run ends when Mario stops making progress
     (timeout), dies, or reaches the flag.
+
+    ``on_frame(agent, info)`` is called after every frame, for example to
+    draw the network over the game or record a video.
     """
     agent = NEATAgent(genome)
     grid, info = env.reset()
@@ -70,6 +79,8 @@ def run_genome(env: gym.Env, genome: Genome, render: bool = False) -> RunResult:
         grid, _, terminated, truncated, info = env.step(agent.act(grid))
         if render:
             env.render()
+        if on_frame is not None:
+            on_frame(agent, info)
         frame += 1
         if info["x_pos"] > rightmost:
             rightmost = info["x_pos"]
