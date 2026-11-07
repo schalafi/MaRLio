@@ -60,8 +60,10 @@ scripts/
   train_neat.py         evolve networks until one clears World 1-1
   play_neat.py          watch a trained network play, with its network drawn on top; --record saves an .mp4, --sound adds the game's sound
   plot_neat_progress.py chart a training run's progress
+  record_generations.py one clip per generation of a training run, plus a progress montage
 trained/
   neat-1-1.json         a network that clears World 1-1
+  neat-1-1-generations/ the best network of every generation, two seeds (see its README)
 docs/
   01-environment-and-inputs.md   step 1 explained
   02-neat.md                     step 2 explained
@@ -96,6 +98,7 @@ A network that already clears World 1-1 (evolved in 67 generations) is in
 python scripts/play_neat.py trained/neat-1-1.json                               # live, with the network on top
 python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4  # also save an .mp4
 python scripts/play_neat.py trained/neat-1-1.json --record videos/neat-1-1.mp4 --sound  # ... with the game's sound
+python scripts/record_generations.py trained/neat-1-1-generations/seed0/genomes videos/seed0  # a clip per generation
 ```
 
 ![The trained network playing, with its network drawn on top](docs/images/network-overlay.png)

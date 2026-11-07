@@ -1,0 +1,1 @@
+{"genes": [{"into": 107, "out": 1000005, "weight": 0.836024136745324, "enabled": true, "innovation": 36}, {"into": 16, "out": 1000002, "weight": 0.8060646700169611, "enabled": true, "innovation": 37}], "max_neuron": 169, "mutation_rates": {"connections": 0.2375, "link": 1.9, "bias": 0.38, "node": 0.526315, "enable": 0.210526, "disable": 0.421052, "step": 0.095}, "fitness": 180.0}
