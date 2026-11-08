@@ -7,7 +7,7 @@ regenerated.
 | File | Size | Status | What it is |
 |------|------|--------|------------|
 | `marlio-logo.png` | 2418 × 1264 | **Official** | The name on an orange sign, each letter drawn as a small neural network. |
-| `MaRLio_Final.png` | 1920 × 1080 | Secondary idea (too complicated for the main logo) | A green circuit-board sign with small networks growing out of its top edge, bigger from left to right, to show networks evolving. It was made with an image generator, so there is no recipe and it can't be rebuilt. Keep the file as it is. |
+| `marlio-logo-secondary.png` | 1920 × 1080 | Secondary idea (too complicated for the main logo) | A green circuit-board sign with small networks growing out of its top edge, bigger from left to right, to show networks evolving. It was made with an image generator, so there is no recipe and it can't be rebuilt. Keep the file as it is. |
 
 ## Rebuilding `marlio-logo.png`
 

@@ -1,5 +1,7 @@
 # MaRLio
 
+![MaRLio](docs/images/marlio-logo.png)
+
 Super Mario Bros. solved by learning algorithms, shown interactively.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/schalafi/MaRLio)
