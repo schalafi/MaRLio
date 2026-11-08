@@ -14,6 +14,8 @@ genomes once and saves, in the output folder:
   ("milestone") and whether it is the same genome as an earlier generation
 * ``LABEL-progress-montage.mp4`` the milestone clips back to back, each
   labelled "Generation N  best x X"
+* ``LABEL-distinct-genomes-montage.mp4`` every different best genome once,
+  in order (generations that kept the same genome are skipped)
 * ``log.csv``                   a copy of the training log
 
 Many generations keep the previous generation's best genome unchanged
@@ -50,14 +52,46 @@ def play(genome_path: Path, video: Path, level: str, sound: bool, overlay: bool)
     subprocess.run(cmd, check=True, capture_output=True)
 
 
-def label_clip(src: Path, dst: Path, text: str) -> None:
+def duration(video: Path) -> float:
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+                          "format=duration", "-of", "csv=p=0", str(video)],
+                         check=True, capture_output=True, text=True).stdout
+    return float(out.strip())
+
+
+def has_audio(video: Path) -> bool:
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries",
+                          "stream=index", "-of", "csv=p=0", str(video)],
+                         check=True, capture_output=True, text=True).stdout
+    return bool(out.strip())
+
+
+def montage(clips: list[tuple[Path, str]], dst: Path) -> None:
+    """Join clips back to back, each with a caption, keeping the sound in sync.
+
+    Joining the .mp4s as they are ("concat -c copy") lets the sound drift: each
+    clip's audio is a few milliseconds longer or shorter than its video, and
+    the error adds up clip after clip. So every clip's audio is cut or padded
+    to exactly its video's length and the whole montage is encoded once.
+    """
     font = f"fontfile={FONT}:" if Path(FONT).exists() else ""
-    subprocess.run([
-        "ffmpeg", "-v", "error", "-y", "-i", str(src),
-        "-vf", f"drawtext={font}text='{text}':x=(w-tw)/2:y=h-60:fontsize=34:fontcolor=white"
-               ":box=1:boxcolor=black@0.6:boxborderw=12",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ar", "44100", "-ac", "2", str(dst),
-    ], check=True)
+    sound = all(has_audio(clip) for clip, _ in clips)
+    inputs, filters, joined = [], [], ""
+    for i, (clip, text) in enumerate(clips):
+        inputs += ["-i", str(clip)]
+        filters.append(f"[{i}:v]setpts=PTS-STARTPTS,drawtext={font}text='{text}':x=(w-tw)/2:y=h-60"
+                       f":fontsize=34:fontcolor=white:box=1:boxcolor=black@0.6:boxborderw=12[v{i}]")
+        joined += f"[v{i}]"
+        if sound:
+            filters.append(f"[{i}:a]aresample=48000,apad,atrim=0:{duration(clip):.6f},"
+                           f"asetpts=PTS-STARTPTS[a{i}]")
+            joined += f"[a{i}]"
+    filters.append(f"{joined}concat=n={len(clips)}:v=1:a={int(sound)}[v]" + ("[a]" if sound else ""))
+    cmd = ["ffmpeg", "-v", "error", "-y", *inputs, "-filter_complex", ";".join(filters), "-map", "[v]"]
+    if sound:
+        cmd += ["-map", "[a]", "-c:a", "aac", "-b:a", "192k"]
+    cmd += ["-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(dst)]
+    subprocess.run(cmd, check=True)
 
 
 def main():
@@ -68,7 +102,13 @@ def main():
     parser.add_argument("--level", default=DEFAULT_LEVEL)
     parser.add_argument("--no-sound", action="store_true")
     parser.add_argument("--overlay-only", action="store_true", help="skip the clips without the network")
+    parser.add_argument("--montage-only", action="store_true",
+                        help="only rebuild the montages from the clips and index.csv already in OUT")
     args = parser.parse_args()
+    if args.montage_only:
+        out = Path(args.out)
+        write_montages(out, args.label, list(csv.DictReader(open(out / "index.csv"))))
+        return
 
     run, out = Path(args.run), Path(args.out)
     for sub in ("overlay", "genomes") + (() if args.overlay_only else ("clean",)):
@@ -115,19 +155,19 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    parts = []
-    for gen, x, clip in milestones:
-        part = out / f".montage-{gen:03d}.mp4"
-        label_clip(clip, part, f"Generation {gen}   best x {x}")
-        parts.append(part)
-    concat = out / ".montage.txt"
-    concat.write_text("".join(f"file '{p.resolve()}'\n" for p in parts))
-    montage = out / f"{args.label}-progress-montage.mp4"
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0",
-                    "-i", str(concat), "-c", "copy", str(montage)], check=True)
-    for p in parts + [concat]:
-        p.unlink()
-    print(f"{len(rows)} generations, {len(seen)} distinct genomes, {len(milestones)} milestones -> {montage}")
+    write_montages(out, args.label, rows)
+    print(f"{len(rows)} generations, {len(seen)} distinct genomes, {len(milestones)} milestones")
+
+
+def write_montages(out: Path, label: str, rows: list[dict]) -> None:
+    """The milestone montage (new best x) and the distinct-genome montage."""
+    def caption(r):
+        return f"Generation {r['generation']}   best x {r['best_x']}"
+    milestones = [(out / r["overlay_clip"], caption(r)) for r in rows if r["milestone"] == "yes"]
+    distinct = [(out / r["overlay_clip"], caption(r)) for r in rows if not r["same_genome_as_gen"]]
+    for name, clips in (("progress-montage", milestones), ("distinct-genomes-montage", distinct)):
+        montage(clips, out / f"{label}-{name}.mp4")
+        print(f"{len(clips)} clips -> {out / f'{label}-{name}.mp4'}")
 
 
 if __name__ == "__main__":
