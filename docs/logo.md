@@ -1,11 +1,13 @@
 # The MaRLio logos
 
-Two logos are kept in `docs/images/`:
+**The official logo is `docs/images/marlio-logo.png`.** It is drawn in code by
+`scripts/make_logo.py`, which rebuilds it exactly, so it can be tweaked and
+regenerated.
 
-| File | Size | What it is |
-|------|------|------------|
-| `marlio-logo.png` | 2418 × 1264 | The name on an orange sign, each letter drawn as a small neural network. Made by `scripts/make_logo.py`, which rebuilds it exactly. |
-| `MaRLio_Final.png` | 1920 × 1080 | The final logo: a green circuit-board sign. Small networks grow out of its top edge, bigger from left to right, to show networks evolving. It was made with an image generator, so there is no recipe and it can't be rebuilt. Keep this file as the original. |
+| File | Size | Status | What it is |
+|------|------|--------|------------|
+| `marlio-logo.png` | 2418 × 1264 | **Official** | The name on an orange sign, each letter drawn as a small neural network. |
+| `MaRLio_Final.png` | 1920 × 1080 | Secondary idea (too complicated for the main logo) | A green circuit-board sign with small networks growing out of its top edge, bigger from left to right, to show networks evolving. It was made with an image generator, so there is no recipe and it can't be rebuilt. Keep the file as it is. |
 
 ## Rebuilding `marlio-logo.png`
 
