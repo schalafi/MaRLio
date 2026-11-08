@@ -65,6 +65,8 @@ def main():
                         help="generations without a better x before trying the next start (default 50)")
     parser.add_argument("--generations", type=int, default=600, help="most generations per attempt")
     parser.add_argument("--workers", type=int, default=None)
+    parser.add_argument("--auto-release-a", type=int, default=0, metavar="FRAMES",
+                        help="passed to train_neat.py (see there)")
     args = parser.parse_args()
 
     out = Path(args.out)
@@ -90,6 +92,8 @@ def main():
             cmd += ["--resume", start, "--generations", str(first + args.generations)]
         if args.workers:
             cmd += ["--workers", str(args.workers)]
+        if args.auto_release_a:
+            cmd += ["--auto-release-a", str(args.auto_release_a)]
         folder.mkdir(parents=True, exist_ok=True)
         print(f"attempt {n}: starting from {start}", flush=True)
         with open(folder / "train.log", "w") as console:

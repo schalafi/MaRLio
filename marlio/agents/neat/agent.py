@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import multiprocessing as mp
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -30,22 +31,52 @@ TIMEOUT = 20
 # MarI/O's x-position for "reached the end of World 1-1". Only used for
 # drawing progress charts now; the fitness uses the game's flag_get.
 LEVEL_END_X = 3186
+# Super Mario Bros only jumps when A goes from released to pressed, so a
+# network that holds A while standing in front of a step never jumps again:
+# the screen doesn't change, so neither does its output. With
+# MARLIO_AUTO_RELEASE_A=N (``--auto-release-a N`` in the scripts), the
+# controller lets go of A for one frame once it has been held N frames and
+# Mario is on the ground, like a player tapping the button again. Off (0) by
+# default, so earlier runs replay exactly as before. It is an environment
+# variable so the worker processes see it too.
+AUTO_RELEASE_A = int(os.environ.get("MARLIO_AUTO_RELEASE_A", "0"))
+A = BUTTONS.index("A")
+PLAYER_STATE = 0x1D  # RAM: 0 on the ground, 1 jumping, 2 falling, 3 on the flagpole
+
+
+def set_auto_release_a(frames: int) -> None:
+    """Turn the A auto-release on (frames > 0) for this process and its workers."""
+    global AUTO_RELEASE_A
+    AUTO_RELEASE_A = frames
+    os.environ["MARLIO_AUTO_RELEASE_A"] = str(frames)
 
 class NEATAgent(Agent):
     def __init__(self, genome: Genome):
         self.network = Network(genome, N_INPUTS, N_OUTPUTS)
         self.frame = 0
         self.buttons = [0] * N_OUTPUTS
+        self.on_ground = True  # set by run_genome before each act()
+        self.a_held = 0
 
     def reset(self) -> None:
         self.network.reset()
         self.frame = 0
         self.buttons = [0] * N_OUTPUTS
+        self.a_held = 0
 
     def act(self, observation: np.ndarray) -> list[int]:
         if self.frame % THINK_EVERY == 0:
             self.buttons = self.network.evaluate(observation.ravel())
         self.frame += 1
+        if not AUTO_RELEASE_A or not self.buttons[A]:
+            self.a_held = 0
+            return self.buttons
+        if self.a_held >= AUTO_RELEASE_A and self.on_ground:
+            self.a_held = 0
+            pressed = list(self.buttons)
+            pressed[A] = 0
+            return pressed
+        self.a_held += 1
         return self.buttons
 
 
@@ -95,6 +126,7 @@ def run_genome(
     stats.start(info, env.unwrapped.ram)
     timeout = TIMEOUT
     while True:
+        agent.on_ground = env.unwrapped.ram[PLAYER_STATE] == 0
         grid, _, terminated, truncated, info = env.step(agent.act(grid))
         if render:
             env.render()

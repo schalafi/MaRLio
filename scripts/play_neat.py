@@ -22,6 +22,7 @@ import numpy as np
 from PIL import Image
 
 from marlio.agents.neat import Genome, run_genome
+from marlio.agents.neat.agent import set_auto_release_a
 from marlio.fitness import fitness as run_fitness
 from marlio.agents.neat.display import NetworkDisplay
 from marlio.controller import buttons_to_byte
@@ -50,7 +51,12 @@ def main():
                         help="seconds to keep showing the game after the level is cleared (default 3)")
     parser.add_argument("--sound", action="store_true",
                         help="add the game's music and sound effects to the --record video")
+    parser.add_argument("--auto-release-a", type=int, default=0, metavar="FRAMES",
+                        help="let go of A for one frame after it is held FRAMES frames on the ground "
+                             "(so a network holding A can jump again; default off)")
     args = parser.parse_args()
+    if args.auto_release_a:
+        set_auto_release_a(args.auto_release_a)
     if args.sound and not args.record:
         parser.error("--sound adds sound to the video, so it needs --record (the window has no sound)")
 

@@ -163,3 +163,25 @@ def test_run_genome_scores_with_fitness():
     assert still.frames < 40
     assert runner.rightmost > still.rightmost
     assert runner.fitness == fitness(runner.stats)
+
+
+def test_auto_release_a_lets_go_after_holding_on_the_ground(monkeypatch):
+    from marlio.agents.neat import agent as agent_mod
+
+    class Always:  # a network that always holds A and right
+        def evaluate(self, _):
+            return [1, 0, 0, 0, 0, 1]
+
+    monkeypatch.setattr(agent_mod, "AUTO_RELEASE_A", 3)
+    a = agent_mod.NEATAgent.__new__(agent_mod.NEATAgent)
+    a.network, a.frame, a.buttons, a.on_ground, a.a_held = Always(), 0, [0] * 6, True, 0
+    import numpy as np
+    pressed = [a.act(np.zeros(1))[0] for _ in range(8)]
+    assert pressed == [1, 1, 1, 0, 1, 1, 1, 0]
+    a.on_ground = False  # in the air A stays held (a full-height jump)
+    assert [a.act(np.zeros(1))[0] for _ in range(6)] == [1] * 6
+
+
+def test_auto_release_a_is_off_by_default():
+    from marlio.agents.neat import agent as agent_mod
+    assert agent_mod.AUTO_RELEASE_A == 0

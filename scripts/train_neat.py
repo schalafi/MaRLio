@@ -28,6 +28,7 @@ import time
 from pathlib import Path
 
 from marlio.agents.neat import N_INPUTS, N_OUTPUTS, Evaluator, Genome, NEATConfig, Population, run_genome
+from marlio.agents.neat.agent import set_auto_release_a
 from marlio.env import DEFAULT_LEVEL, make_marios_env
 
 
@@ -44,7 +45,12 @@ def main():
     parser.add_argument("--keep-going", action="store_true", help="don't stop when the level is cleared")
     parser.add_argument("--practice-from", help="genome whose run sets the practice start")
     parser.add_argument("--practice-x", type=int, default=None, help="x position of the practice start")
+    parser.add_argument("--auto-release-a", type=int, default=0, metavar="FRAMES",
+                        help="let go of A for one frame after it is held FRAMES frames on the ground "
+                             "(so a network holding A can jump again; default off)")
     args = parser.parse_args()
+    if args.auto_release_a:
+        set_auto_release_a(args.auto_release_a)
     if bool(args.practice_from) != (args.practice_x is not None):
         parser.error("--practice-from and --practice-x go together")
 
