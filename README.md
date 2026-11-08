@@ -58,6 +58,7 @@ scripts/
   show_inputs.py        watch the game and the grid the network sees
   make_input_figure.py  regenerate the figure in docs/
   train_neat.py         evolve networks until one clears World 1-1
+  train_until_solved.py train a level, starting over from another population when it gets stuck
   play_neat.py          watch a trained network play, with its network drawn on top; --record saves an .mp4, --sound adds the game's sound
   plot_neat_progress.py chart a training run's progress
   record_generations.py one clip per generation of a training run, plus a progress montage
