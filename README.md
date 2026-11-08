@@ -61,6 +61,7 @@ scripts/
   play_neat.py          watch a trained network play, with its network drawn on top; --record saves an .mp4, --sound adds the game's sound
   plot_neat_progress.py chart a training run's progress
   record_generations.py one clip per generation of a training run, plus a progress montage
+  animate_network.py    animations of the network on its own: its parts, and how it evolves
 trained/
   neat-1-1.json         a network that clears World 1-1
   neat-1-1-generations/ the best network of every generation, two seeds (see its README)
