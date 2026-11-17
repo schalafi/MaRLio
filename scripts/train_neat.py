@@ -14,6 +14,10 @@ generation. Saved in ``--out`` after every generation:
 * ``log.csv``          one row of statistics per generation
 * ``practice.json``    the buttons that lead to the practice start, if any
 
+``--max-minutes 60`` stops training after an hour of generations (counted
+from ``log.csv``, so a resumed run only gets the time that is left) and
+saves the population, so it can be resumed later.
+
 Practice starts (``--practice-from best.json --practice-x 1700``): when
 training stalls at a hard spot, every genome also plays a second run that
 starts just before it, and its fitness is the sum of both runs. The practice
@@ -48,6 +52,8 @@ def main():
     parser.add_argument("--auto-release-a", type=int, default=0, metavar="FRAMES",
                         help="let go of A for one frame after it is held FRAMES frames on the ground "
                              "(so a network holding A can jump again; default off)")
+    parser.add_argument("--max-minutes", type=float, default=None,
+                        help="stop after this many minutes of training, counted over resumes")
     args = parser.parse_args()
     if args.auto_release_a:
         set_auto_release_a(args.auto_release_a)
@@ -88,6 +94,8 @@ def main():
         log.writerow(["generation", "species", "genomes_run", "best_fitness", "best_x",
                       "mean_fitness", "max_fitness_ever", "cleared", "seconds"])
     results = {}  # id(genome) -> RunResult, so champions keep theirs
+    # Time already spent in earlier sessions of this run (for --max-minutes).
+    spent = 0.0 if new_log else _seconds_in_log(log_path)
 
     print(f"Training on {args.level} with {evaluator.workers} workers, "
           f"population {population.config.population}")
@@ -134,6 +142,11 @@ def main():
                 break
             population.new_generation()
             population.save(out / "population.json")
+            spent += time.time() - start
+            if args.max_minutes is not None and spent >= args.max_minutes * 60:
+                print(f"Stopping: {spent / 60:.1f} of {args.max_minutes:g} minutes used. "
+                      f"Resume with --resume {out / 'population.json'}")
+                break
     finally:
         evaluator.close()
         log_file.close()
@@ -158,6 +171,12 @@ def _buttons_to(level: str, genome_path: str, x: int) -> list[list[int]]:
     if not reached:
         raise SystemExit(f"{genome_path} never reaches x={x}")
     return buttons
+
+
+def _seconds_in_log(path: Path) -> float:
+    """Seconds of training already recorded in a run's log.csv."""
+    with open(path) as f:
+        return sum(float(row["seconds"]) for row in csv.DictReader(f) if row.get("seconds"))
 
 
 def _genome_json(genome) -> str:

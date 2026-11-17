@@ -21,6 +21,8 @@ dependencies = [
 # Real NES sound in recordings (play_neat.py --sound). Large (~250 MB: it
 # ships emulators for many consoles), so it's optional.
 sound = ["stable-retro>=1.0.1"]
+# Training on Modal's cloud (marlio/cloud/modal_app.py).
+cloud = ["modal>=1.6"]
 
 [dependency-groups]
 dev = ["pytest", "matplotlib"]
