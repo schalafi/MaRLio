@@ -95,7 +95,7 @@ frame. So:
   dropped unevenly and the game would judder.
 
 The 60 fps recording of the trained network is about 26 s (23 s of play
-plus a 3 s outro) and about 8 MB at 768 x 720.
+plus a 10 s outro) and about 8 MB at 768 x 720.
 
 ### Other options
 
@@ -103,7 +103,7 @@ plus a 3 s outro) and about 8 MB at 768 x 720.
 |--------|---------|--------------|
 | `--scale` | 3 | Enlarges the 256 x 240 NES screen (3 gives 768 x 720). The overlay is drawn at full size, so text and lines stay sharp. |
 | `--no-overlay` | off | Shows or records the plain game. |
-| `--outro` | 3 | Seconds to keep the game running after the flag (no buttons pressed), so the video ends with Mario sliding down the pole and walking to the castle instead of cutting off mid-jump. |
+| `--outro` | 10 | Seconds to keep the game running after the level is cleared (no buttons pressed), so the video shows the ending: Mario sliding down the pole and walking into the castle, or Toad in a castle level. |
 | `--runs` | 1 | Plays several times in a row. |
 | `--sound` | off | Adds the game's music and sound effects to the recording (see below). |
 

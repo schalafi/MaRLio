@@ -44,7 +44,7 @@ FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 def play(genome_path: Path, video: Path, level: str, sound: bool, overlay: bool) -> None:
     cmd = [sys.executable, str(PLAY), str(genome_path), "--level", level, "--no-render",
-           "--outro", "1", "--record", str(video)]
+           "--outro", "10", "--record", str(video)]
     if sound:
         cmd.append("--sound")
     if not overlay:
