@@ -1,0 +1,5 @@
+generation,species,genomes_run,best_fitness,best_x,mean_fitness,max_fitness_ever,cleared,seconds
+335,2,300,402.7,553,43.5,402.7,False,5.2
+336,2,298,1402.6,1567,64.4,1402.6,False,8.7
+337,2,298,1402.6,1567,100.1,1402.6,False,13.8
+338,2,300,3144.7,2246,139.5,3144.7,True,19.8

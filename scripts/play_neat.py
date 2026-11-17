@@ -47,8 +47,8 @@ def main():
     parser.add_argument("--fps", type=int, default=NES_FPS,
                         help="video frame rate: 60 keeps every game frame, 30 every other one (default 60)")
     parser.add_argument("--scale", type=int, default=3, help="enlarge the 256x240 screen this many times (default 3)")
-    parser.add_argument("--outro", type=float, default=3.0,
-                        help="seconds to keep showing the game after the level is cleared (default 3)")
+    parser.add_argument("--outro", type=float, default=10.0,
+                        help="seconds to keep showing the game after the level is cleared (default 10)")
     parser.add_argument("--sound", action="store_true",
                         help="add the game's music and sound effects to the --record video")
     parser.add_argument("--auto-release-a", type=int, default=0, metavar="FRAMES",
