@@ -89,10 +89,24 @@ def _commit_every(seconds: float, stop: threading.Event) -> None:
 
 @app.function(image=image, cpu=CPU, memory=MEMORY_MB, volumes={str(RUNS): volume},
               timeout=24 * 3600, retries=modal.Retries(max_retries=3, initial_delay=10.0))
-def train(run: str, args: list[str]) -> dict:
-    """Run ``scripts/train_neat.py`` with ``args`` into ``/runs/<run>``, resuming if it was started before."""
+def train(run: str, args: list[str], hard_minutes: float = 0) -> dict:
+    """Run ``scripts/train_neat.py`` with ``args`` into ``/runs/<run>``, resuming if it was started before.
+
+    ``hard_minutes`` (0 = none) is a wall-clock cap on the whole run,
+    counted from its first start, retries included: at the deadline the
+    trainer is stopped, keeping the last saved generation.
+    """
     out = RUNS / run
     Path(out).mkdir(parents=True, exist_ok=True)
+    deadline = None
+    if hard_minutes:
+        first = Path(out / "started_at")
+        if not first.exists():
+            first.write_text(str(time.time()))
+        deadline = float(first.read_text()) + hard_minutes * 60
+        if time.time() >= deadline:
+            print(f"Run {run} is past its hard limit of {hard_minutes:g} minutes; not restarting.")
+            return {"skipped": "past hard limit"}
     args = list(args)
     if Path(out / "population.json").exists():
         # A retry after preemption, or a second launch: carry on from the
@@ -112,6 +126,15 @@ def train(run: str, args: list[str]) -> dict:
     with open(out / "console.log", "a") as console:
         console.write(f"$ {shlex.join(cmd)}\n")
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        if deadline is not None:
+            def stop_at_deadline():
+                while proc.poll() is None and time.time() < deadline:
+                    time.sleep(5)
+                if proc.poll() is None:
+                    print(f"Hard limit of {hard_minutes:g} minutes reached: stopping.", flush=True)
+                    console.write(f"Hard limit of {hard_minutes:g} minutes reached: stopping.\n")
+                    proc.terminate()
+            threading.Thread(target=stop_at_deadline, daemon=True).start()
         for line in proc.stdout:
             print(line, end="", flush=True)
             console.write(line)
@@ -129,10 +152,11 @@ def train(run: str, args: list[str]) -> dict:
         "memory_gib": MEMORY_MB / 1024,
         "estimated_usd": round(seconds / 3600 * cost_per_hour(), 3),
         "exit_code": code,
+        "hit_hard_limit": bool(deadline is not None and time.time() >= deadline),
     })
     usage_path.write_text(json.dumps(sessions, indent=1))
     volume.commit()
-    if code != 0:
+    if code != 0 and not sessions[-1]["hit_hard_limit"]:
         raise RuntimeError(f"train_neat.py exited with code {code}")
     return sessions[-1]
 
@@ -154,16 +178,21 @@ def record(run: str, level: str, auto_release_a: int, genome: str = "best.json")
 
 @app.local_entrypoint()
 def launch(run: str, level: str = "SuperMarioBros-1-4-v0", start: str = "", minutes: float = 60,
-           auto_release_a: int = 30, seed: int = 0, extra: str = ""):
+           hard_minutes: float = 0, selection: str = "fitness", auto_release_a: int = 30,
+           seed: int = 0, extra: str = ""):
     """Start one training run on Modal.
 
     ``--start`` is a ``population.json`` on this computer to warm start from
     (it is uploaded to the Volume as ``/seeds/<run>.json``); leave it out for
-    a fresh population with ``--seed``. ``--extra`` passes more flags to
+    a fresh population with ``--seed``. ``--minutes`` caps the minutes of
+    training; ``--hard-minutes`` caps the wall-clock time of the whole run,
+    restarts included (0 = no cap). ``--selection nslc`` or ``dns`` turns on
+    novelty search. ``--extra`` passes more flags to
     train_neat.py, e.g. ``--extra "--population 300"``.
     """
     # The time cap ends the run, not a generation count.
-    args = ["--level", level, "--max-minutes", str(minutes), "--generations", "100000"]
+    args = ["--level", level, "--max-minutes", str(minutes), "--generations", "100000",
+            "--selection", selection]
     if auto_release_a:
         args += ["--auto-release-a", str(auto_release_a)]
     if start:
@@ -175,10 +204,12 @@ def launch(run: str, level: str = "SuperMarioBros-1-4-v0", start: str = "", minu
     else:
         args += ["--seed", str(seed)]
     args += shlex.split(extra)
-    call = train.spawn(run, args)
+    fn = train.with_options(timeout=int(hard_minutes * 60) + 120) if hard_minutes else train
+    call = fn.spawn(run, args, hard_minutes)
     print(f"Started run {run!r} on Modal ({CPU} cores, {WORKERS} games at a time): call {call.object_id}")
+    longest = max(minutes, hard_minutes)
     print(f"About ${cost_per_hour():.2f} per hour, so about ${cost_per_hour() * minutes / 60:.2f} "
-          f"for {minutes:g} minutes. Watch it with: uv run modal run marlio/cloud/modal_app.py::status")
+          f"for {minutes:g} minutes (at most ${cost_per_hour() * longest / 60:.2f}). Watch it with: uv run modal run marlio/cloud/modal_app.py::status")
 
 
 @app.local_entrypoint()

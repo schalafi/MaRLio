@@ -41,6 +41,12 @@ LEVEL_END_X = 3186
 # variable so the worker processes see it too.
 AUTO_RELEASE_A = int(os.environ.get("MARLIO_AUTO_RELEASE_A", "0"))
 A = BUTTONS.index("A")
+# Novelty search describes a run by where Mario was: his (x, y) every
+# BEHAVIOR_EVERY frames, in 16-pixel tiles, BEHAVIOR_SAMPLES times (40 s).
+# A shorter run repeats its last position, so dying early looks like
+# standing still there.
+BEHAVIOR_EVERY = 30
+BEHAVIOR_SAMPLES = 80
 PLAYER_STATE = 0x1D  # RAM: 0 on the ground, 1 jumping, 2 falling, 3 on the flagpole
 
 
@@ -88,6 +94,8 @@ class RunResult:
     cleared: bool
     died: bool = False
     stats: RunStats | None = None
+    # Where Mario was during the run, for novelty search (see BEHAVIOR_EVERY).
+    behavior: list[float] | None = None
     # The run from the practice start, when training uses one (see Evaluator).
     practice: RunResult | None = None
 
@@ -125,6 +133,7 @@ def run_genome(
     stats = RunStats(frames=start_frame)
     stats.start(info, env.unwrapped.ram)
     timeout = TIMEOUT
+    path: list[tuple[float, float]] = []
     while True:
         agent.on_ground = env.unwrapped.ram[PLAYER_STATE] == 0
         grid, _, terminated, truncated, info = env.step(agent.act(grid))
@@ -132,6 +141,8 @@ def run_genome(
             env.render()
         rightmost = stats.rightmost
         stats.update(info, env.unwrapped.ram)
+        if stats.frames % BEHAVIOR_EVERY == 0 and len(path) < BEHAVIOR_SAMPLES:
+            path.append((info["x_pos"] / 16, info["y_pos"] / 16))
         if on_frame is not None:
             on_frame(agent, info, stats)
         if stats.rightmost > rightmost:
@@ -145,7 +156,10 @@ def run_genome(
     score = fitness(stats)
     if score == 0:
         score = -1  # 0 means "not measured yet"
-    return RunResult(score, stats.rightmost, stats.frames, stats.cleared, stats.died, stats)
+    last = path[-1] if path else (info["x_pos"] / 16, info["y_pos"] / 16)
+    path += [last] * (BEHAVIOR_SAMPLES - len(path))
+    behavior = [v for point in path for v in point]
+    return RunResult(score, stats.rightmost, stats.frames, stats.cleared, stats.died, stats, behavior)
 
 
 # --- Running many genomes in parallel ----------------------------------------
@@ -182,7 +196,7 @@ def play(env: gym.Env, genome: Genome, practice=None) -> RunResult:
     state, frames_in = practice
     extra = run_genome(env, genome, start_from=state, start_frame=frames_in)
     return RunResult(result.fitness + extra.fitness, result.rightmost, result.frames,
-                     result.cleared, result.died, result.stats, practice=extra)
+                     result.cleared, result.died, result.stats, result.behavior, practice=extra)
 
 
 def _init_worker(level: str, practice_buttons) -> None:

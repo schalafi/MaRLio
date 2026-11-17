@@ -181,7 +181,12 @@ class Population:
                 for s in self.species
             ],
         }
-        Path(path).write_text(json.dumps(data))
+        # Write to a temporary file first, so a run stopped mid-save never
+        # leaves a half-written population behind.
+        path = Path(path)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(data))
+        tmp.replace(path)
 
     @classmethod
     def load(cls, path: str | Path) -> Population:
