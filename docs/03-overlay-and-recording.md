@@ -94,7 +94,7 @@ frame. So:
   (such as 25) are refused, because they would need frames duplicated or
   dropped unevenly and the game would judder.
 
-The 60 fps recording of the trained network is about 26 s (23 s of play
+The 60 fps recording of the trained network is about 33 s (23 s of play
 plus a 10 s outro) and about 8 MB at 768 x 720.
 
 ### Other options
