@@ -38,6 +38,7 @@ See ``docs/06-training-on-modal.md`` for the why and the prices.
 from __future__ import annotations
 
 import json
+import os
 import shlex
 import subprocess
 import sys
@@ -45,9 +46,16 @@ import threading
 import time
 from pathlib import Path, PurePosixPath
 
-import modal
+# Workspaces made before 2025 default to an old image builder that insists on
+# modal being a core dependency; the 2025.06 builder doesn't. Must be set
+# before modal is imported.
+os.environ.setdefault("MODAL_IMAGE_BUILDER_VERSION", "2025.06")
 
-REPO = Path(__file__).resolve().parents[2]
+import modal  # noqa: E402
+
+# The repo root, on your computer. In the container this file is
+# /root/modal_app.py and the image is already built, so it isn't needed.
+REPO = Path(__file__).resolve().parents[2] if modal.is_local() else Path("/root")
 RUNS = PurePosixPath("/runs")
 CPU = 16  # physical cores; Modal gives 2 hardware threads per core
 WORKERS = 2 * CPU  # one emulator per hardware thread
